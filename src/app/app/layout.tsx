@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Sidebar />
         <Layout>
           <TopNav />
-          <Layout.Content style={{ padding: 24, minHeight: 'calc(100vh - 64px)' }}>
+          <Layout.Content style={{ padding: 24, minHeight: 'calc(100vh - 56px)' }}>
             {children}
           </Layout.Content>
         </Layout>

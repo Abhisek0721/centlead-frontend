@@ -5,8 +5,6 @@ import { Card, Form, Input, Button, Descriptions, Divider, Modal } from 'antd';
 import {
   SaveOutlined,
   DeleteOutlined,
-  CopyOutlined,
-  CheckOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import toast from 'react-hot-toast';
@@ -34,7 +32,6 @@ export default function SettingsPage() {
   const deleteWorkspace = useDeleteWorkspace(workspaceId);
 
   const [form] = Form.useForm();
-  const [copied, setCopied] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
@@ -64,13 +61,6 @@ export default function SettingsPage() {
     }
   }
 
-  function copyId() {
-    navigator.clipboard.writeText(workspaceId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
   const canDelete = deleteConfirmText === workspace?.name;
 
   return (
@@ -94,33 +84,11 @@ export default function SettingsPage() {
 
       {/* Workspace info */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 16 }}
         title={<span style={{ fontWeight: 700 }}>Workspace Info</span>}
       >
         <Descriptions column={1} size="small" style={{ marginBottom: 20 }}>
-          <Descriptions.Item label="Workspace ID">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <code
-                style={{
-                  background: '#F3F4F6',
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  fontSize: 12,
-                  color: '#374151',
-                  fontFamily: 'monospace',
-                }}
-              >
-                {workspaceId}
-              </code>
-              <Button
-                type="text"
-                size="small"
-                icon={copied ? <CheckOutlined style={{ color: '#10B981' }} /> : <CopyOutlined />}
-                onClick={copyId}
-              />
-            </div>
-          </Descriptions.Item>
           <Descriptions.Item label="Created">
             {workspace?.createdAt ? formatDate(workspace.createdAt) : '—'}
           </Descriptions.Item>
@@ -157,7 +125,7 @@ export default function SettingsPage() {
 
       {/* Danger zone */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{
           borderRadius: 12,
           boxShadow: '0 1px 4px rgba(239,68,68,0.12)',
@@ -180,7 +148,7 @@ export default function SettingsPage() {
           }}
         >
           <div>
-            <div style={{ fontWeight: 600, color: '#374151', marginBottom: 2 }}>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
               Delete this workspace
             </div>
             <div style={{ fontSize: 13, color: '#6B7280' }}>
@@ -214,11 +182,11 @@ export default function SettingsPage() {
         footer={null}
         width={460}
       >
-        <p style={{ color: '#374151', marginBottom: 8 }}>
+        <p style={{ color: 'var(--text-primary)', marginBottom: 8 }}>
           This will permanently delete{' '}
           <strong>{workspace?.name}</strong> and all of its data, including jobs, leads, and team members.
         </p>
-        <p style={{ color: '#374151', marginBottom: 16 }}>
+        <p style={{ color: 'var(--text-primary)', marginBottom: 16 }}>
           Type <strong>{workspace?.name}</strong> to confirm:
         </p>
         <Input

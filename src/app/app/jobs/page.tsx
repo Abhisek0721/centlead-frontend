@@ -24,6 +24,8 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   ThunderboltFilled,
+  LockFilled,
+  RiseOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -68,9 +70,147 @@ function timeAgo(dateStr: string) {
   return 'just now';
 }
 
+function AiToggleCard({ value, onChange, isTrial }: { value?: boolean; onChange?: (v: boolean) => void; isTrial: boolean }) {
+  const enabled = isTrial ? true : (value ?? true);
+
+  return (
+    <div
+      style={{
+        border: enabled ? '1.5px solid #4F46E580' : '1.5px solid var(--border)',
+        borderRadius: 12,
+        padding: '14px 16px',
+        background: enabled ? 'linear-gradient(135deg, #4F46E508, #7C3AED08)' : 'var(--bg-surface)',
+        marginBottom: 20,
+        transition: 'all 0.2s ease',
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: enabled ? 'linear-gradient(135deg, #4F46E5, #7C3AED)' : 'var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'background 0.2s',
+            }}
+          >
+            <ThunderboltFilled style={{ color: enabled ? '#fff' : '#9CA3AF', fontSize: 16 }} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+              AI Lead Intelligence
+            </div>
+            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+              Scores 0–100 · Crawls websites · Explains fit
+            </div>
+          </div>
+        </div>
+        {isTrial ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <LockFilled style={{ color: 'var(--brand)', fontSize: 11 }} />
+            <Switch checked disabled size="small" style={{ background: '#4F46E5' }} />
+          </div>
+        ) : (
+          <Switch
+            checked={enabled}
+            onChange={onChange}
+            size="small"
+            style={enabled ? { background: '#4F46E5' } : {}}
+          />
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ marginTop: 12, paddingLeft: 46 }}>
+        {enabled ? (
+          <>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 10px', lineHeight: 1.5 }}>
+              For each lead, AI visits the website, evaluates it against your goal, assigns a score, and writes a one-line reason — so you know exactly who to reach out to first.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Lead generation', cost: '1 credit' },
+                { label: 'Website crawl', cost: '1 credit' },
+                { label: 'AI scoring', cost: '2 credits', highlight: true },
+              ].map(({ label, cost, highlight }) => (
+                <div
+                  key={label}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 20,
+                    background: highlight ? '#4F46E515' : 'var(--bg-elevated)',
+                    color: highlight ? 'var(--brand)' : 'var(--text-secondary)',
+                    border: highlight ? '1px solid #4F46E530' : '1px solid transparent',
+                  }}
+                >
+                  {label} · {cost}
+                </div>
+              ))}
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '3px 8px',
+                  borderRadius: 20,
+                  background: 'var(--text-primary)',
+                  color: 'var(--bg-base)',
+                }}
+              >
+                = 4 credits / lead
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <RiseOutlined style={{ color: '#F59E0B', marginTop: 2, flexShrink: 0 }} />
+            <div>
+              <p style={{ fontSize: 13, color: 'var(--text-primary)', margin: '0 0 4px', fontWeight: 600 }}>
+                You&apos;ll get raw leads only — no scores, no website analysis.
+              </p>
+              <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>
+                2 credits/lead · Enable AI to turn raw leads into ranked opportunities.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isTrial && (
+          <div
+            style={{
+              marginTop: 10,
+              padding: '8px 10px',
+              borderRadius: 8,
+              background: '#4F46E510',
+              border: '1px solid #4F46E530',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <ThunderboltFilled style={{ color: 'var(--brand)', fontSize: 11, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 500 }}>
+              AI lead intelligence is enabled during your trial so you can experience the full product.{' '}
+              <span style={{ fontWeight: 700 }}>Upgrade to customize analysis.</span>
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function JobsPage() {
   const router = useRouter();
-  const { workspaceId } = useWorkspaceContext();
+  const { workspaceId, workspace } = useWorkspaceContext();
+  const isTrial = workspace?.plan === 'trial' || workspace?.plan === 'free';
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -83,7 +223,7 @@ export default function JobsPage() {
 
   async function handleCreate(values: { searchQuery: string; goalPrompt: string; aiEnabled: boolean }) {
     try {
-      await createJob.mutateAsync(values);
+      await createJob.mutateAsync({ ...values, aiEnabled: isTrial ? true : values.aiEnabled });
       toast.success('Job created and queued!');
       form.resetFields();
       setShowModal(false);
@@ -143,7 +283,7 @@ export default function JobsPage() {
       render: (v: boolean) =>
         v ? (
           <Tooltip title="AI analysis enabled">
-            <ThunderboltFilled style={{ color: '#4F46E5', fontSize: 16 }} />
+            <ThunderboltFilled style={{ color: 'var(--brand)', fontSize: 16 }} />
           </Tooltip>
         ) : null,
     },
@@ -152,7 +292,7 @@ export default function JobsPage() {
       key: 'leads',
       width: 80,
       render: (_: unknown, record: Job) => (
-        <span style={{ fontWeight: 700, color: '#4F46E5', fontSize: 15 }}>
+        <span style={{ fontWeight: 700, color: 'var(--brand)', fontSize: 15 }}>
           {record._count?.leads ?? 0}
         </span>
       ),
@@ -212,7 +352,7 @@ export default function JobsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1100 }}>
+    <div>
       {/* Page header */}
       <div
         style={{
@@ -255,9 +395,10 @@ export default function JobsPage() {
       ) : (data?.jobs ?? []).length === 0 ? (
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-surface)',
             borderRadius: 12,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            border: '1px solid var(--border)',
             padding: 48,
           }}
         >
@@ -286,9 +427,10 @@ export default function JobsPage() {
       ) : (
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-surface)',
             borderRadius: 12,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            border: '1px solid var(--border)',
             overflow: 'hidden',
           }}
         >
@@ -365,13 +507,9 @@ export default function JobsPage() {
             />
           </Form.Item>
 
-          <Form.Item
-            name="aiEnabled"
-            label="AI Analysis"
-            valuePropName="checked"
-            extra="AI scores and enriches each lead. Recommended."
-          >
-            <Switch defaultChecked />
+          {/* AI Lead Intelligence toggle */}
+          <Form.Item name="aiEnabled" valuePropName="checked" noStyle>
+            <AiToggleCard isTrial={isTrial} />
           </Form.Item>
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>

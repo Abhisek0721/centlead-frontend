@@ -92,7 +92,7 @@ export default function DashboardPage() {
       key: 'leads',
       width: 80,
       render: (_: unknown, record: Job) => (
-        <span style={{ fontWeight: 700, color: '#4F46E5' }}>
+        <span style={{ fontWeight: 700, color: 'var(--brand)' }}>
           {record._count?.leads ?? 0}
         </span>
       ),
@@ -204,8 +204,8 @@ export default function DashboardPage() {
         ].map(({ label, value, unit, color }) => (
           <Col key={label} xs={24} sm={12} lg={6}>
             <Card
-              bordered={false}
-              style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', height: '100%' }}
+              variant="borderless"
+              style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid var(--border)', height: '100%' }}
             >
               <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginBottom: 10 }}>
                 {label}
@@ -223,14 +223,14 @@ export default function DashboardPage() {
         {/* Credits card — same height, usage-first framing */}
         <Col xs={24} sm={12} lg={6}>
           <Card
-            bordered={false}
-            style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', height: '100%' }}
+            variant="borderless"
+            style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid var(--border)', height: '100%' }}
           >
             <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginBottom: 10 }}>
               Credits
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 32, fontWeight: 800, color: '#4F46E5', lineHeight: 1 }}>
+              <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--brand)', lineHeight: 1 }}>
                 {(workspace?.creditsRemaining ?? 0).toLocaleString()}
               </span>
               <span style={{ fontSize: 13, color: '#9CA3AF', fontWeight: 500 }}>remaining</span>
@@ -240,7 +240,7 @@ export default function DashboardPage() {
               style={{
                 height: 4,
                 borderRadius: 4,
-                background: '#E5E7EB',
+                background: 'var(--border)',
                 overflow: 'hidden',
               }}
             >
@@ -263,8 +263,8 @@ export default function DashboardPage() {
 
       {/* Recent Jobs */}
       <Card
-        bordered={false}
-        style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        variant="borderless"
+        style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}
         title={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 700, fontSize: 16 }}>Recent Jobs</span>

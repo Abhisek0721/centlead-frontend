@@ -9,6 +9,7 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  googleId?: string | null;
   emailVerified: boolean;
   createdAt: string;
 }

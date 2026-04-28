@@ -16,6 +16,7 @@ interface WorkspaceContextType {
   workspace: Workspace | null;
   workspaces: Workspace[];
   switchWorkspace: (id: string) => void;
+  openCreateModal: () => void;
   isLoading: boolean;
 }
 
@@ -24,6 +25,7 @@ const WorkspaceContext = createContext<WorkspaceContextType>({
   workspace: null,
   workspaces: [],
   switchWorkspace: () => {},
+  openCreateModal: () => {},
   isLoading: true,
 });
 
@@ -66,6 +68,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setWorkspaceId(id);
   }
 
+  function openCreateModal() {
+    setShowCreateModal(true);
+  }
+
   async function handleCreate(values: { name: string }) {
     setCreating(true);
     try {
@@ -92,14 +98,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   return (
     <WorkspaceContext.Provider
-      value={{ workspaceId: activeId, workspace, workspaces, switchWorkspace, isLoading }}
+      value={{ workspaceId: activeId, workspace, workspaces, switchWorkspace, openCreateModal, isLoading }}
     >
       {children}
 
       <Modal
         open={showCreateModal}
-        closable={false}
-        maskClosable={false}
+        closable={workspaces.length > 0}
+        mask={{ closable: workspaces.length > 0 }}
+        onCancel={() => {
+          if (workspaces.length > 0) {
+            setShowCreateModal(false);
+            form.resetFields();
+          }
+        }}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div
@@ -118,7 +130,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             >
               C
             </div>
-            <span>Create your workspace</span>
+            <span>{workspaces.length === 0 ? 'Create your workspace' : 'New workspace'}</span>
           </div>
         }
         footer={null}

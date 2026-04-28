@@ -15,24 +15,34 @@ function AntdThemedProvider({ children }: { children: React.ReactNode }) {
   const antdConfig = {
     algorithm: dark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
     token: {
-      colorPrimary: '#4F46E5',
-      colorBgBase: dark ? '#0D0F1A' : '#FFFFFF',
-      colorBgContainer: dark ? '#12141F' : '#FFFFFF',
-      colorBgElevated: dark ? '#1A1D2E' : '#FFFFFF',
+      colorPrimary: dark ? '#6366F1' : '#4F46E5',
+      colorBgBase: dark ? '#09090F' : '#FAFAFA',
+      colorBgContainer: dark ? '#111118' : '#FFFFFF',
+      colorBgElevated: dark ? '#18181F' : '#FFFFFF',
+      colorBorder: dark ? '#1C1C26' : '#E5E7EB',
+      colorText: dark ? '#F1F5F9' : '#0F172A',
+      colorTextSecondary: dark ? '#94A3B8' : '#64748B',
       borderRadius: 10,
       fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
     },
     components: {
       Layout: {
-        siderBg: dark ? '#0D0F1A' : '#FFFFFF',
-        headerBg: dark ? '#12141F' : '#FFFFFF',
-        bodyBg: dark ? '#0D0F1A' : '#F8F9FF',
+        siderBg: dark ? '#09090F' : '#FFFFFF',
+        headerBg: dark ? '#111118' : '#FFFFFF',
+        bodyBg: dark ? '#09090F' : '#FAFAFA',
       },
       Menu: {
-        darkItemBg: '#0D0F1A',
-        darkSubMenuItemBg: '#0D0F1A',
+        darkItemBg: '#09090F',
+        darkSubMenuItemBg: '#09090F',
         itemBg: 'transparent',
         subMenuItemBg: 'transparent',
+      },
+      Card: {
+        colorBgContainer: dark ? '#111118' : '#FFFFFF',
+      },
+      Table: {
+        colorBgContainer: dark ? '#111118' : '#FFFFFF',
+        headerBg: dark ? '#18181F' : '#FAFAFA',
       },
     },
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { Row, Col, Card, Progress, Table, Tag, Button, Skeleton } from 'antd';
+import { Row, Col, Card, Table, Tag, Button, Skeleton } from 'antd';
 import {
   ThunderboltOutlined,
   CheckOutlined,
@@ -36,9 +36,11 @@ export default function BillingPage() {
   const { data: txData, isLoading: txLoading } = useCreditTransactions(workspaceId, { limit: 20 });
   const { data: plans = [], isLoading: plansLoading } = useBillingPlans();
 
-  const creditsUsed = (balance?.monthlyCredits ?? 0) - (balance?.creditsRemaining ?? 0);
-  const creditPct = balance?.monthlyCredits
-    ? Math.round((balance.creditsRemaining / balance.monthlyCredits) * 100)
+  const monthlyCredits = balance?.monthlyCredits ?? workspace?.monthlyCredits ?? 0;
+  const creditsRemaining = balance?.creditsRemaining ?? workspace?.creditsRemaining ?? 0;
+  const creditsUsed = monthlyCredits - creditsRemaining;
+  const creditPct = monthlyCredits
+    ? Math.round((creditsRemaining / monthlyCredits) * 100)
     : 0;
 
   const trialDaysLeft = workspace?.trialEndsAt
@@ -127,7 +129,7 @@ export default function BillingPage() {
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} md={12}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', height: '100%' }}
           >
             <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginBottom: 8 }}>
@@ -138,7 +140,7 @@ export default function BillingPage() {
                 style={{
                   fontSize: 26,
                   fontWeight: 900,
-                  color: PLAN_HIGHLIGHT[currentPlan] ?? '#374151',
+                  color: PLAN_HIGHLIGHT[currentPlan] ?? 'var(--text-primary)',
                   textTransform: 'capitalize',
                   letterSpacing: '-0.5px',
                 }}
@@ -164,30 +166,43 @@ export default function BillingPage() {
 
         <Col xs={24} md={12}>
           <Card
-            bordered={false}
+            variant="borderless"
             style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', height: '100%' }}
           >
             <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', marginBottom: 8 }}>
               Credits
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-              <ThunderboltOutlined style={{ color: '#4F46E5', fontSize: 18 }} />
-              <span style={{ fontSize: 28, fontWeight: 900, color: '#4F46E5' }}>
-                {(balance?.creditsRemaining ?? workspace?.creditsRemaining ?? 0).toLocaleString()}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+              <ThunderboltOutlined style={{ color: 'var(--brand)', fontSize: 18 }} />
+              <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--brand)' }}>
+                {creditsRemaining.toLocaleString()}
               </span>
-              <span style={{ fontSize: 14, color: '#9CA3AF' }}>
-                / {(balance?.monthlyCredits ?? workspace?.monthlyCredits ?? 0).toLocaleString()} remaining
-              </span>
+              <span style={{ fontSize: 14, color: '#9CA3AF' }}>remaining</span>
             </div>
-            <Progress
-              percent={creditPct}
-              showInfo={false}
-              strokeColor={creditPct < 20 ? '#EF4444' : creditPct < 50 ? '#F59E0B' : '#4F46E5'}
-              trailColor="#E5E7EB"
-              style={{ marginBottom: 8 }}
-            />
+            {/* Usage bar: starts empty, fills as credits are consumed */}
+            <div
+              style={{
+                height: 6,
+                borderRadius: 4,
+                background: 'var(--border)',
+                overflow: 'hidden',
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${100 - creditPct}%`,
+                  borderRadius: 4,
+                  background:
+                    (100 - creditPct) > 80 ? '#EF4444' :
+                    (100 - creditPct) > 50 ? '#F59E0B' : 'var(--brand)',
+                  transition: 'width 0.4s ease',
+                }}
+              />
+            </div>
             <span style={{ fontSize: 13, color: '#6B7280' }}>
-              {creditsUsed.toLocaleString()} used this period
+              {creditsUsed.toLocaleString()} of {monthlyCredits.toLocaleString()} used this period
             </span>
           </Card>
         </Col>
@@ -195,33 +210,56 @@ export default function BillingPage() {
 
       {/* Plan cards */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', marginBottom: 24 }}
         title={<span style={{ fontWeight: 700 }}>Available Plans</span>}
       >
         {plansLoading ? (
           <Skeleton active paragraph={{ rows: 3 }} />
         ) : (
-          <Row gutter={16}>
-            {(plans.length > 0 ? plans : PLAN_ORDER.map((id) => ({
-              id,
-              name: id.charAt(0).toUpperCase() + id.slice(1),
-              price: { starter: 29, growth: 79, pro: 149, agency: 299 }[id] ?? 0,
-              credits: { starter: 2000, growth: 8000, pro: 25000, agency: 100000 }[id] ?? 0,
-              features: [],
-            }))).map((plan: BillingPlan) => {
+          <Row gutter={[16, 16]}>
+            {(plans.length > 0 ? plans : [
+              {
+                id: 'starter',
+                name: 'Starter',
+                price: 29,
+                credits: 2000,
+                features: ['2,000 credits / month', 'Lead generation', 'Lead scoring', 'Export leads', '1 workspace'],
+              },
+              {
+                id: 'growth',
+                name: 'Growth',
+                price: 79,
+                credits: 8000,
+                features: ['8,000 credits / month', 'Advanced scoring', 'Website analysis', 'Lead exports', 'Priority processing'],
+              },
+              {
+                id: 'pro',
+                name: 'Pro',
+                price: 149,
+                credits: 25000,
+                features: ['25,000 credits / month', 'Team accounts', 'Advanced filters', 'Bulk jobs', 'All Growth features'],
+              },
+              {
+                id: 'agency',
+                name: 'Agency',
+                price: 299,
+                credits: 100000,
+                features: ['100,000 credits / month', 'API access', 'Team collaboration', 'Priority processing', 'Dedicated support'],
+              },
+            ] as BillingPlan[]).map((plan: BillingPlan) => {
               const isCurrent = currentPlan === plan.id;
               const color = PLAN_HIGHLIGHT[plan.id] ?? '#4F46E5';
               return (
                 <Col key={plan.id} xs={24} sm={12} lg={6}>
                   <div
                     style={{
-                      border: isCurrent ? `2px solid ${color}` : '1.5px solid #E5E7EB',
+                      border: isCurrent ? `2px solid ${color}` : '1.5px solid var(--border)',
                       borderRadius: 12,
                       padding: 20,
                       position: 'relative',
                       transition: 'box-shadow 0.2s',
-                      background: isCurrent ? `${color}08` : '#fff',
+                      background: isCurrent ? `${color}08` : 'var(--bg-elevated)',
                     }}
                   >
                     {isCurrent && (
@@ -231,7 +269,7 @@ export default function BillingPage() {
                           top: -10,
                           left: 16,
                           color,
-                          background: '#fff',
+                          background: 'var(--bg-elevated)',
                           border: `1.5px solid ${color}`,
                           borderRadius: 20,
                           fontWeight: 700,
@@ -244,7 +282,7 @@ export default function BillingPage() {
                     <div style={{ fontWeight: 800, fontSize: 16, color, marginBottom: 2 }}>
                       {plan.name}
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: '#111827', marginBottom: 4 }}>
+                    <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 4 }}>
                       ${plan.price}
                       <span style={{ fontSize: 14, fontWeight: 400, color: '#9CA3AF' }}>/mo</span>
                     </div>
@@ -263,7 +301,7 @@ export default function BillingPage() {
                         key={f}
                         style={{
                           fontSize: 12,
-                          color: '#374151',
+                          color: 'var(--text-secondary)',
                           marginBottom: 6,
                           display: 'flex',
                           alignItems: 'flex-start',
@@ -296,7 +334,7 @@ export default function BillingPage() {
 
       {/* Transaction history */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
         title={<span style={{ fontWeight: 700 }}>Credit History</span>}
       >

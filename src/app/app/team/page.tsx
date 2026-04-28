@@ -315,9 +315,9 @@ export default function TeamPage() {
             children: (
               <div
                 style={{
-                  background: '#fff',
+                  background: 'var(--bg-surface)',
                   borderRadius: 12,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  border: '1px solid var(--border)',
                   overflow: 'hidden',
                 }}
               >
@@ -343,9 +343,9 @@ export default function TeamPage() {
             children: (
               <div
                 style={{
-                  background: '#fff',
+                  background: 'var(--bg-surface)',
                   borderRadius: 12,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                  border: '1px solid var(--border)',
                   overflow: 'hidden',
                 }}
               >

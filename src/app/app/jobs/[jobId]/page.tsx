@@ -135,7 +135,7 @@ export default function JobDetailPage() {
       render: (_: unknown, record: Lead) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {record.email && (
-            <a href={`mailto:${record.email}`} style={{ fontSize: 13, color: '#4F46E5' }}>
+            <a href={`mailto:${record.email}`} style={{ fontSize: 13, color: 'var(--brand)' }}>
               <MailOutlined style={{ marginRight: 4 }} />{record.email}
             </a>
           )}
@@ -158,7 +158,7 @@ export default function JobDetailPage() {
             href={url.startsWith('http') ? url : `https://${url}`}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: 13, color: '#4F46E5', display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ fontSize: 13, color: 'var(--brand)', display: 'flex', alignItems: 'center', gap: 4 }}
             onClick={(e) => e.stopPropagation()}
           >
             <GlobalOutlined />
@@ -247,7 +247,7 @@ export default function JobDetailPage() {
 
       {/* Job info card */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{
           borderRadius: 12,
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
@@ -262,7 +262,7 @@ export default function JobDetailPage() {
                 <Tag
                   icon={<ThunderboltFilled />}
                   style={{
-                    color: '#4F46E5',
+                    color: 'var(--brand)',
                     background: '#EEF2FF',
                     border: '1px solid #C7D2FE',
                     borderRadius: 6,
@@ -291,7 +291,7 @@ export default function JobDetailPage() {
           <Col xs={24} lg={8}>
             <Descriptions column={1} size="small" style={{ marginTop: 4 }}>
               <Descriptions.Item label="Leads found">
-                <span style={{ fontWeight: 700, color: '#4F46E5', fontSize: 16 }}>
+                <span style={{ fontWeight: 700, color: 'var(--brand)', fontSize: 16 }}>
                   {job._count?.leads ?? 0}
                   {job.maxLeads ? ` / ${job.maxLeads}` : ''}
                 </span>
@@ -304,7 +304,7 @@ export default function JobDetailPage() {
                       Math.round(((job._count?.leads ?? 0) / job.maxLeads) * 100),
                     )}
                     size="small"
-                    strokeColor="#4F46E5"
+                    strokeColor="var(--brand)"
                     style={{ width: 140 }}
                   />
                 </Descriptions.Item>
@@ -319,7 +319,7 @@ export default function JobDetailPage() {
 
       {/* Leads table */}
       <Card
-        bordered={false}
+        variant="borderless"
         style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
         title={
           <span style={{ fontWeight: 700, fontSize: 16 }}>

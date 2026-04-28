@@ -5,6 +5,8 @@ const BASE = `${envConstant.NEXT_PUBLIC_API_URL}/api`;
 export const API_ROUTES = {
   AUTH: {
     ME: `${BASE}/auth/me`,
+    UPDATE_PROFILE: `${BASE}/auth/profile`,
+    CHANGE_PASSWORD: `${BASE}/auth/change-password`,
     SEND_VERIFICATION: `${BASE}/auth/send-verification-email`,
     RESEND_VERIFICATION: `${BASE}/auth/resend-verification`,
     VERIFY_EMAIL: `${BASE}/auth/verify-email`,

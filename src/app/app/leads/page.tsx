@@ -93,7 +93,7 @@ export default function LeadsPage() {
       key: 'email',
       render: (email: string | null) =>
         email ? (
-          <a href={`mailto:${email}`} style={{ fontSize: 13, color: '#4F46E5' }}>
+          <a href={`mailto:${email}`} style={{ fontSize: 13, color: 'var(--brand)' }}>
             <MailOutlined style={{ marginRight: 4 }} />{email}
           </a>
         ) : (
@@ -106,7 +106,7 @@ export default function LeadsPage() {
       key: 'phone',
       render: (phone: string | null) =>
         phone ? (
-          <span style={{ fontSize: 13, color: '#374151' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
             <PhoneOutlined style={{ marginRight: 4 }} />{phone}
           </span>
         ) : (
@@ -123,7 +123,7 @@ export default function LeadsPage() {
             href={url.startsWith('http') ? url : `https://${url}`}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: 13, color: '#4F46E5' }}
+            style={{ fontSize: 13, color: 'var(--brand)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <GlobalOutlined style={{ marginRight: 4 }} />
@@ -201,7 +201,7 @@ export default function LeadsPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1200 }}>
+    <div>
       {/* Header */}
       <div
         style={{
@@ -250,9 +250,10 @@ export default function LeadsPage() {
       ) : leads.length === 0 ? (
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-surface)',
             borderRadius: 12,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            border: '1px solid var(--border)',
             padding: 60,
           }}
         >
@@ -277,9 +278,10 @@ export default function LeadsPage() {
       ) : (
         <div
           style={{
-            background: '#fff',
+            background: 'var(--bg-surface)',
             borderRadius: 12,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            border: '1px solid var(--border)',
             overflow: 'hidden',
           }}
         >
