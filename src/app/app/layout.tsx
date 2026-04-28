@@ -6,7 +6,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Layout } from 'antd';
 import Sidebar from '@components/layout/Sidebar';
 import TopNav from '@components/layout/TopNav';
-import envConstant from '@constants/envConstant';
+import { WorkspaceProvider } from '@providers/WorkspaceProvider';
+import { API_ROUTES } from '@constants/apiRoutes';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     queryKey: ['me'],
     queryFn: async () => {
       const token = localStorage.getItem('centlead_token');
-      const res = await fetch(`${envConstant.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+      const res = await fetch(API_ROUTES.AUTH.ME, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Unauthorized');
@@ -34,14 +35,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [data, router]);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sidebar />
-      <Layout>
-        <TopNav />
-        <Layout.Content style={{ padding: 24, minHeight: 'calc(100vh - 64px)' }}>
-          {children}
-        </Layout.Content>
+    <WorkspaceProvider>
+      <Layout style={{ minHeight: '100vh' }}>
+        <Sidebar />
+        <Layout>
+          <TopNav />
+          <Layout.Content style={{ padding: 24, minHeight: 'calc(100vh - 64px)' }}>
+            {children}
+          </Layout.Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </WorkspaceProvider>
   );
 }

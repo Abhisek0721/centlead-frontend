@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '@lib/axios';
 import { API_ROUTES } from '@constants/apiRoutes';
-import type { ApiResponse, Job, PaginationParams } from '@appTypes/index';
+import type { ApiResponse, ApiPaginationResponse, Job, PaginationParams } from '@appTypes/index';
 
 export const JOBS_KEY = 'jobs';
 
@@ -9,11 +9,11 @@ export function useJobs(workspaceId: string, pagination?: PaginationParams) {
   return useQuery({
     queryKey: [JOBS_KEY, workspaceId, pagination],
     queryFn: async () => {
-      const { data } = await axiosInstance.get<ApiResponse<{ jobs: Job[]; totalCount: number }>>(
+      const { data } = await axiosInstance.get<ApiPaginationResponse<Job[]>>(
         API_ROUTES.JOBS.BASE(workspaceId),
         { params: pagination },
       );
-      return data.data;
+      return { jobs: data.data, totalCount: data.pagination.totalCount };
     },
     enabled: !!workspaceId,
   });

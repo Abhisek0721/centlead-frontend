@@ -7,6 +7,8 @@ export type SubscriptionStatus = 'active' | 'canceled' | 'past_due';
 export interface User {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   emailVerified: boolean;
   createdAt: string;
 }
@@ -20,6 +22,7 @@ export interface Workspace {
   creditsRemaining: number;
   trialEndsAt: string | null;
   createdAt: string;
+  _count?: { members: number; jobs: number };
 }
 
 export interface Job {
@@ -49,6 +52,7 @@ export interface Lead {
   reason: string | null;
   analysisJson: object | null;
   createdAt: string;
+  job?: Job;
 }
 
 export interface WorkspaceMember {
@@ -90,6 +94,21 @@ export interface CreditTransaction {
   createdAt: string;
 }
 
+export interface CreditBalance {
+  plan: Plan;
+  monthlyCredits: number;
+  creditsRemaining: number;
+  trialEndsAt: string | null;
+}
+
+export interface BillingPlan {
+  id: string;
+  name: string;
+  price: number;
+  credits: number;
+  features: string[];
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   totalCount: number;
@@ -99,6 +118,17 @@ export interface ApiResponse<T> {
   statusCode: number;
   message: string;
   data: T;
+}
+
+export interface ApiPaginationResponse<T> {
+  data: T;
+  message: string;
+  error: object | null;
+  pagination: {
+    totalCount: number;
+    totalPages: number;
+    limit: number;
+  };
 }
 
 export interface PaginationParams {

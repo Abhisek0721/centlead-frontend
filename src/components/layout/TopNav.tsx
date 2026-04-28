@@ -2,21 +2,32 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Layout, Space, Tag } from 'antd';
-import { ThunderboltOutlined, SunOutlined, MoonOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  ThunderboltOutlined,
+  SunOutlined,
+  MoonOutlined,
+  LogoutOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { useTheme } from '@providers/ThemeProvider';
 import { useAuth } from '@providers/AuthProvider';
+import { useWorkspaceContext } from '@providers/WorkspaceProvider';
 import { useRouter } from 'next/navigation';
 
 const { Header } = Layout;
 
-interface TopNavProps {
-  creditsRemaining?: number;
-  plan?: string;
-}
+const PLAN_COLOR: Record<string, string> = {
+  trial: 'orange',
+  starter: 'blue',
+  growth: 'geekblue',
+  pro: 'purple',
+  agency: 'magenta',
+};
 
-export default function TopNav({ creditsRemaining, plan }: TopNavProps) {
+export default function TopNav() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { workspace } = useWorkspaceContext();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,6 +47,9 @@ export default function TopNav({ creditsRemaining, plan }: TopNavProps) {
     router.push('/login');
   }
 
+  const plan = workspace?.plan;
+  const credits = workspace?.creditsRemaining;
+
   return (
     <Header
       style={{
@@ -53,19 +67,19 @@ export default function TopNav({ creditsRemaining, plan }: TopNavProps) {
       <Space size={8}>
         {plan && plan !== 'free' && (
           <Tag
-            color={plan === 'trial' ? 'orange' : 'blue'}
-            style={{ textTransform: 'capitalize', margin: 0 }}
+            color={PLAN_COLOR[plan] ?? 'blue'}
+            style={{ textTransform: 'capitalize', margin: 0, fontWeight: 600 }}
           >
             {plan}
           </Tag>
         )}
 
-        {creditsRemaining !== undefined && (
+        {credits !== undefined && (
           <Space size={4} style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
             <ThunderboltOutlined style={{ color: '#4F46E5' }} />
             <span>
               <strong style={{ color: 'var(--text-primary)' }}>
-                {creditsRemaining.toLocaleString()}
+                {credits.toLocaleString()}
               </strong>{' '}
               credits
             </span>
@@ -93,12 +107,12 @@ export default function TopNav({ creditsRemaining, plan }: TopNavProps) {
 
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
-            onClick={() => setMenuOpen(v => !v)}
+            onClick={() => setMenuOpen((v) => !v)}
             style={{
               width: 32,
               height: 32,
               borderRadius: '50%',
-              background: '#4F46E5',
+              background: 'linear-gradient(135deg, #4F46E5, #7C3AED)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -106,27 +120,54 @@ export default function TopNav({ creditsRemaining, plan }: TopNavProps) {
               justifyContent: 'center',
               color: '#fff',
               fontSize: 14,
+              fontWeight: 700,
             }}
           >
-            <UserOutlined />
+            {user?.email?.[0]?.toUpperCase() ?? <UserOutlined />}
           </button>
 
           {menuOpen && (
-            <div style={{
-              position: 'absolute',
-              right: 0,
-              top: 40,
-              background: 'var(--bg-elevated, #fff)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              minWidth: 200,
-              padding: '8px 0',
-              zIndex: 100,
-            }}>
-              <div style={{ padding: '8px 14px 10px', borderBottom: '1px solid var(--border)' }}>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>Signed in as</p>
-                <p style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 40,
+                background: 'var(--bg-elevated, #fff)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                minWidth: 210,
+                padding: '8px 0',
+                zIndex: 100,
+              }}
+            >
+              <div
+                style={{
+                  padding: '8px 14px 10px',
+                  borderBottom: '1px solid var(--border)',
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    color: 'var(--text-secondary)',
+                    fontWeight: 500,
+                  }}
+                >
+                  Signed in as
+                </p>
+                <p
+                  style={{
+                    margin: '2px 0 0',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                    fontWeight: 700,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   {user?.email}
                 </p>
               </div>

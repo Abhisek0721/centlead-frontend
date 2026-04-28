@@ -2,8 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosInstance from '@lib/axios';
 import { API_ROUTES } from '@constants/apiRoutes';
 import type { ApiResponse, Workspace } from '@appTypes/index';
+import { WORKSPACE_QUERY_KEY } from '@providers/WorkspaceProvider';
 
-export const WORKSPACE_KEY = 'workspaces';
+export const WORKSPACE_KEY = WORKSPACE_QUERY_KEY;
 
 export function useWorkspaces() {
   return useQuery({
@@ -39,6 +40,30 @@ export function useCreateWorkspace() {
         { name },
       );
       return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [WORKSPACE_KEY] }),
+  });
+}
+
+export function useUpdateWorkspace(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const { data } = await axiosInstance.patch<ApiResponse<Workspace>>(
+        API_ROUTES.WORKSPACES.BY_ID(workspaceId),
+        { name },
+      );
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [WORKSPACE_KEY] }),
+  });
+}
+
+export function useDeleteWorkspace(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await axiosInstance.delete(API_ROUTES.WORKSPACES.BY_ID(workspaceId));
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [WORKSPACE_KEY] }),
   });
