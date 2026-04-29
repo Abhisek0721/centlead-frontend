@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import axiosInstance from '@lib/axios';
 import { API_ROUTES } from '@constants/apiRoutes';
 import { setWorkspaceId, getWorkspaceId } from '@utils/localStorage';
-import type { ApiResponse, Workspace } from '@appTypes/index';
+import type { ApiResponse, Role, Workspace } from '@appTypes/index';
 
 export const WORKSPACE_QUERY_KEY = 'workspaces';
 
@@ -15,6 +15,7 @@ interface WorkspaceContextType {
   workspaceId: string;
   workspace: Workspace | null;
   workspaces: Workspace[];
+  currentRole: Role | null;
   switchWorkspace: (id: string) => void;
   openCreateModal: () => void;
   isLoading: boolean;
@@ -24,6 +25,7 @@ const WorkspaceContext = createContext<WorkspaceContextType>({
   workspaceId: '',
   workspace: null,
   workspaces: [],
+  currentRole: null,
   switchWorkspace: () => {},
   openCreateModal: () => {},
   isLoading: true,
@@ -95,10 +97,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   const workspace = workspaces.find((w) => w.id === activeId) ?? null;
+  const currentRole = workspace?.myRole ?? null;
 
   return (
     <WorkspaceContext.Provider
-      value={{ workspaceId: activeId, workspace, workspaces, switchWorkspace, openCreateModal, isLoading }}
+      value={{ workspaceId: activeId, workspace, workspaces, currentRole, switchWorkspace, openCreateModal, isLoading }}
     >
       {children}
 

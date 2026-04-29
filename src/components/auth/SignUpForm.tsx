@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@providers/AuthProvider';
@@ -121,6 +121,13 @@ function useResendCooldown() {
 export default function SignUpForm() {
   const { signup } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+
+  // Persist invite token so it survives email verification redirect
+  useEffect(() => {
+    if (inviteToken) localStorage.setItem('centlead_pending_invite', inviteToken);
+  }, [inviteToken]);
 
   const [step, setStep] = useState<Step>('form');
   const [firstName, setFirstName] = useState('');

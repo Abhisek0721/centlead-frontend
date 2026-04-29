@@ -5,6 +5,7 @@ const BASE = `${envConstant.NEXT_PUBLIC_API_URL}/api`;
 export const API_ROUTES = {
   AUTH: {
     ME: `${BASE}/auth/me`,
+    CHECK_EMAIL: (email: string) => `${BASE}/auth/check-email?email=${encodeURIComponent(email)}`,
     UPDATE_PROFILE: `${BASE}/auth/profile`,
     CHANGE_PASSWORD: `${BASE}/auth/change-password`,
     SEND_VERIFICATION: `${BASE}/auth/send-verification-email`,
@@ -40,6 +41,8 @@ export const API_ROUTES = {
       `${BASE}/workspace/${workspaceId}/team/members/${memberId}`,
     ACCEPT_INVITE: (workspaceId: string) =>
       `${BASE}/workspace/${workspaceId}/team/accept-invite`,
+    RESEND_INVITE: (workspaceId: string, invitationId: string) =>
+      `${BASE}/workspace/${workspaceId}/team/invitations/${invitationId}/resend`,
   },
   CREDITS: {
     BALANCE: (workspaceId: string) => `${BASE}/workspace/${workspaceId}/credits`,
@@ -48,5 +51,9 @@ export const API_ROUTES = {
   },
   BILLING: {
     PLANS: `${BASE}/billing/plans`,
+  },
+  INVITE: {
+    PREVIEW: (token: string) => `${BASE}/invite/preview?token=${token}`,
+    ACCEPT: `${BASE}/invite/accept`,
   },
 };

@@ -64,3 +64,13 @@ export function useRemoveMember(workspaceId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: [TEAM_KEY, workspaceId] }),
   });
 }
+
+export function useResendInvite(workspaceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (invitationId: string) => {
+      await axiosInstance.post(API_ROUTES.TEAM.RESEND_INVITE(workspaceId, invitationId));
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [TEAM_KEY, workspaceId] }),
+  });
+}

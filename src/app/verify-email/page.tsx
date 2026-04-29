@@ -31,7 +31,24 @@ function VerifyEmailInner() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Verification failed');
-        applyToken(data.data.accessToken);
+        const accessToken = data.data.accessToken;
+        applyToken(accessToken);
+
+        // Accept pending workspace invite before redirecting — avoids the race
+        // condition where WorkspaceProvider shows "Create workspace" modal
+        const pendingInvite = localStorage.getItem('centlead_pending_invite');
+        if (pendingInvite) {
+          localStorage.removeItem('centlead_pending_invite');
+          await fetch(`${envConstant.NEXT_PUBLIC_API_URL}/api/invite/accept`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ token: pendingInvite }),
+          }).catch(() => {}); // Silently ignore — token may have expired
+        }
+
         setStatus('success');
         setTimeout(() => router.replace('/app'), 1500);
       })

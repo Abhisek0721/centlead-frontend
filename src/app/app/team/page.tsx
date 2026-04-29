@@ -22,6 +22,7 @@ import {
   UserDeleteOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  SendOutlined,
 } from '@ant-design/icons';
 import toast from 'react-hot-toast';
 import { useWorkspaceContext } from '@providers/WorkspaceProvider';
@@ -32,6 +33,7 @@ import {
   useInviteMember,
   useUpdateMemberRole,
   useRemoveMember,
+  useResendInvite,
 } from '@hooks/useTeam';
 import type { WorkspaceMember, WorkspaceInvitation, Role } from '@appTypes/index';
 
@@ -77,6 +79,7 @@ export default function TeamPage() {
   const inviteMember = useInviteMember(workspaceId);
   const updateRole = useUpdateMemberRole(workspaceId);
   const removeMember = useRemoveMember(workspaceId);
+  const resendInvite = useResendInvite(workspaceId);
 
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [form] = Form.useForm();
@@ -111,6 +114,15 @@ export default function TeamPage() {
       toast.success('Member removed');
     } catch (err) {
       toast.error(extractError(err) || 'Failed to remove member');
+    }
+  }
+
+  async function handleResend(invitationId: string, email: string) {
+    try {
+      await resendInvite.mutateAsync(invitationId);
+      toast.success(`Invitation resent to ${email}`);
+    } catch (err) {
+      toast.error(extractError(err) || 'Failed to resend invitation');
     }
   }
 
@@ -263,6 +275,28 @@ export default function TeamPage() {
       render: (d: string) => (
         <span style={{ fontSize: 13, color: '#9CA3AF' }}>{formatDate(d)}</span>
       ),
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 100,
+      render: (_: unknown, record: WorkspaceInvitation) => {
+        if (record.status === 'accepted' || !isOwnerOrAdmin) return null;
+        return (
+          <Tooltip title="Resend invitation">
+            <Button
+              type="text"
+              size="small"
+              icon={<SendOutlined />}
+              loading={resendInvite.isPending}
+              onClick={() => handleResend(record.id, record.email)}
+              style={{ color: 'var(--brand)' }}
+            >
+              Resend
+            </Button>
+          </Tooltip>
+        );
+      },
     },
   ];
 

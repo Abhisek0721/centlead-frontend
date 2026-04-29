@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Row, Col, Card, Table, Tag, Button, Skeleton } from 'antd';
 import {
   ThunderboltOutlined,
@@ -8,6 +9,7 @@ import {
   MinusOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { useWorkspaceContext } from '@providers/WorkspaceProvider';
 import { useBillingPlans } from '@hooks/useBilling';
 import { useCreditBalance, useCreditTransactions } from '@hooks/useCredits';
@@ -31,7 +33,15 @@ function formatDate(d: string) {
 }
 
 export default function BillingPage() {
-  const { workspaceId, workspace } = useWorkspaceContext();
+  const router = useRouter();
+  const { workspaceId, workspace, currentRole, isLoading } = useWorkspaceContext();
+  const isAdminOrOwner = currentRole === 'owner' || currentRole === 'admin';
+
+  useEffect(() => {
+    if (!isLoading && currentRole && !isAdminOrOwner) {
+      router.replace('/app');
+    }
+  }, [isLoading, currentRole, isAdminOrOwner, router]);
   const { data: balance } = useCreditBalance(workspaceId);
   const { data: txData, isLoading: txLoading } = useCreditTransactions(workspaceId, { limit: 20 });
   const { data: plans = [], isLoading: plansLoading } = useBillingPlans();

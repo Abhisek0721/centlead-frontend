@@ -16,14 +16,16 @@ import { useAuth } from '@providers/AuthProvider';
 
 const { Sider } = Layout;
 
-const NAV_ITEMS = [
+type NavItem = { key: string; icon: React.ReactNode; label: string; adminOnly?: true };
+
+const NAV_ITEMS: (NavItem | null)[] = [
   { key: '/app', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/app/jobs', icon: <ThunderboltOutlined />, label: 'Jobs' },
   { key: '/app/leads', icon: <ContactsOutlined />, label: 'Leads' },
   null,
   { key: '/app/team', icon: <TeamOutlined />, label: 'Team' },
-  { key: '/app/billing', icon: <CreditCardOutlined />, label: 'Billing' },
-  { key: '/app/settings', icon: <SettingOutlined />, label: 'Settings' },
+  { key: '/app/billing', icon: <CreditCardOutlined />, label: 'Billing', adminOnly: true },
+  { key: '/app/settings', icon: <SettingOutlined />, label: 'Settings', adminOnly: true },
 ];
 
 function NavItem({
@@ -81,10 +83,22 @@ function NavItem({
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { workspace } = useWorkspaceContext();
+  const { workspace, currentRole } = useWorkspaceContext();
   const { user } = useAuth();
 
-  const allNavItems = NAV_ITEMS.filter((i): i is NonNullable<typeof i> => i !== null);
+  const isAdminOrOwner = currentRole === 'owner' || currentRole === 'admin';
+
+  // Filter nav items by role, then strip orphaned dividers
+  const visibleItems = NAV_ITEMS
+    .filter((item) => item === null || !item.adminOnly || isAdminOrOwner)
+    .filter((item, i, arr) => {
+      // Remove a null divider if the next non-null item doesn't exist
+      if (item !== null) return true;
+      const rest = arr.slice(i + 1);
+      return rest.some((x) => x !== null);
+    });
+
+  const allNavItems = visibleItems.filter((i): i is NavItem => i !== null);
   const selectedKey =
     allNavItems
       .slice()
@@ -151,7 +165,7 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
-          {NAV_ITEMS.map((item, i) =>
+          {visibleItems.map((item, i) =>
             item === null ? (
               <div
                 key={`divider-${i}`}

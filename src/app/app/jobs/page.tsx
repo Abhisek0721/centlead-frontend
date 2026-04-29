@@ -209,8 +209,9 @@ function AiToggleCard({ value, onChange, isTrial }: { value?: boolean; onChange?
 
 export default function JobsPage() {
   const router = useRouter();
-  const { workspaceId, workspace } = useWorkspaceContext();
+  const { workspaceId, workspace, currentRole } = useWorkspaceContext();
   const isTrial = workspace?.plan === 'trial' || workspace?.plan === 'free';
+  const canMutate = currentRole !== 'viewer';
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -323,29 +324,31 @@ export default function JobsPage() {
               }}
             />
           </Tooltip>
-          <Popconfirm
-            title="Delete this job?"
-            description="All associated leads will also be deleted."
-            onConfirm={(e) => {
-              e?.stopPropagation();
-              handleDelete(record.id);
-            }}
-            onCancel={(e) => e?.stopPropagation()}
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            disabled={record.status === 'running'}
-          >
-            <Tooltip title={record.status === 'running' ? 'Cannot delete a running job' : 'Delete'}>
-              <Button
-                type="text"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                disabled={record.status === 'running'}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </Tooltip>
-          </Popconfirm>
+          {canMutate && (
+            <Popconfirm
+              title="Delete this job?"
+              description="All associated leads will also be deleted."
+              onConfirm={(e) => {
+                e?.stopPropagation();
+                handleDelete(record.id);
+              }}
+              onCancel={(e) => e?.stopPropagation()}
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+              disabled={record.status === 'running'}
+            >
+              <Tooltip title={record.status === 'running' ? 'Cannot delete a running job' : 'Delete'}>
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={record.status === 'running'}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Tooltip>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -378,15 +381,17 @@ export default function JobsPage() {
             {data?.totalCount ?? 0} total jobs
           </p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          size="large"
-          onClick={() => setShowModal(true)}
-          style={{ fontWeight: 600 }}
-        >
-          Create Job
-        </Button>
+        {canMutate && (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            onClick={() => setShowModal(true)}
+            style={{ fontWeight: 600 }}
+          >
+            Create Job
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -410,18 +415,20 @@ export default function JobsPage() {
                   No jobs yet
                 </p>
                 <p style={{ color: '#6B7280', margin: 0 }}>
-                  Create your first job to start discovering leads.
+                  {canMutate ? 'Create your first job to start discovering leads.' : 'No jobs have been created yet.'}
                 </p>
               </div>
             }
           >
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setShowModal(true)}
-            >
-              Create First Job
-            </Button>
+            {canMutate && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setShowModal(true)}
+              >
+                Create First Job
+              </Button>
+            )}
           </Empty>
         </div>
       ) : (

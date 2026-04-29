@@ -27,9 +27,17 @@ function extractError(err: unknown) {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { workspaceId, workspace } = useWorkspaceContext();
+  const { workspaceId, workspace, currentRole, isLoading } = useWorkspaceContext();
+  const isAdminOrOwner = currentRole === 'owner' || currentRole === 'admin';
+  const isOwner = currentRole === 'owner';
   const updateWorkspace = useUpdateWorkspace(workspaceId);
   const deleteWorkspace = useDeleteWorkspace(workspaceId);
+
+  useEffect(() => {
+    if (!isLoading && currentRole && !isAdminOrOwner) {
+      router.replace('/app');
+    }
+  }, [isLoading, currentRole, isAdminOrOwner, router]);
 
   const [form] = Form.useForm();
   const [deleteModal, setDeleteModal] = useState(false);
@@ -99,32 +107,34 @@ export default function SettingsPage() {
           </Descriptions.Item>
         </Descriptions>
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleRename}
-        >
-          <Form.Item
-            name="name"
-            label="Workspace name"
-            rules={[{ required: true, message: 'Enter a name' }, { max: 100 }]}
-          >
-            <Input placeholder="Workspace name" maxLength={100} size="large" />
-          </Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={updateWorkspace.isPending}
-            icon={<SaveOutlined />}
-            style={{ fontWeight: 600 }}
-          >
-            Save Changes
-          </Button>
-        </Form>
+        {isAdminOrOwner ? (
+          <Form form={form} layout="vertical" onFinish={handleRename}>
+            <Form.Item
+              name="name"
+              label="Workspace name"
+              rules={[{ required: true, message: 'Enter a name' }, { max: 100 }]}
+            >
+              <Input placeholder="Workspace name" maxLength={100} size="large" />
+            </Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={updateWorkspace.isPending}
+              icon={<SaveOutlined />}
+              style={{ fontWeight: 600 }}
+            >
+              Save Changes
+            </Button>
+          </Form>
+        ) : (
+          <div style={{ padding: '12px 0', color: '#6B7280', fontSize: 14 }}>
+            Only admins and owners can rename this workspace.
+          </div>
+        )}
       </Card>
 
-      {/* Danger zone */}
-      <Card
+      {/* Danger zone — owner only */}
+      {isOwner && <Card
         variant="borderless"
         style={{
           borderRadius: 12,
@@ -164,7 +174,7 @@ export default function SettingsPage() {
             Delete Workspace
           </Button>
         </div>
-      </Card>
+      </Card>}
 
       {/* Delete confirmation modal */}
       <Modal

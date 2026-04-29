@@ -23,6 +23,7 @@ export interface Workspace {
   creditsRemaining: number;
   trialEndsAt: string | null;
   createdAt: string;
+  myRole?: Role;
   _count?: { members: number; jobs: number };
 }
 

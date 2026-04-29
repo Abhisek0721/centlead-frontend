@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import axiosInstance from '@lib/axios';
+import { API_ROUTES } from '@constants/apiRoutes';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@providers/AuthProvider';
 import envConstant from '@constants/envConstant';
@@ -120,6 +122,8 @@ const FORM: React.CSSProperties = { display: 'flex', flexDirection: 'column', ga
 export default function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite');
 
   const [step, setStep] = useState<Step>('login');
   const [email, setEmail] = useState('');
@@ -138,6 +142,13 @@ export default function LoginForm() {
     setLoading(true);
     try {
       await login(email, password);
+      if (inviteToken) {
+        try {
+          await axiosInstance.post(API_ROUTES.INVITE.ACCEPT, { token: inviteToken });
+        } catch {
+          // Ignore — workspace might already be joined or token expired
+        }
+      }
       router.push('/app');
     } catch (e) {
       const msg = (e as Error).message || '';

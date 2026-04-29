@@ -34,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [data, router]);
 
+
   return (
     <WorkspaceProvider>
       <Layout style={{ minHeight: '100vh' }}>
