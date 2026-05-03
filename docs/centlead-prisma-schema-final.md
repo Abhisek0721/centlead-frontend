@@ -1,77 +1,76 @@
-# Centlead Prisma Schema (Final Correct Version)
+# Centlead Prisma Schema (Current)
 
-Database: PostgreSQL\
-ORM: Prisma\
+Database: PostgreSQL
+ORM: Prisma
 Architecture: Workspace-based multi-tenant SaaS
 
-This schema supports:
-
--   Clerk authentication
--   Workspace teams
--   AI lead scoring
--   Job-based AI schema
--   Credit usage tracking
--   WHOP subscriptions
-
-------------------------------------------------------------------------
+---
 
 # User
 
-Users are authenticated with **Clerk**.\
-We keep a local reference to connect users to workspaces.
+Custom auth — no third-party provider. Supports email/password and Google OAuth.
 
-``` prisma
+```prisma
 model User {
-  id            String   @id
+  id            String   @id @default(uuid())
   email         String   @unique
+  password      String?          // null for Google-only accounts
+  firstName     String?
+  lastName      String?
+  googleId      String?  @unique // null for email/password accounts
+  emailVerified Boolean  @default(false)
+  hasUsedTrial  Boolean  @default(false)
   createdAt     DateTime @default(now())
 
-  memberships   WorkspaceMember[]
+  memberships     WorkspaceMember[]
+  workspacesOwned Workspace[]
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 # Workspace
 
 All resources belong to a workspace.
 
-``` prisma
+```prisma
 model Workspace {
-  id                String   @id @default(uuid())
-  name              String
-  ownerId           String
+  id               String    @id @default(uuid())
+  name             String
+  ownerId          String
+  plan             String    @default("trial")
+  monthlyCredits   Int       @default(300)
+  creditsRemaining Int       @default(300)
+  trialEndsAt      DateTime?
+  createdAt        DateTime  @default(now())
 
-  plan              String
-  monthlyCredits    Int
-  creditsRemaining  Int
-
-  createdAt         DateTime @default(now())
-
-  owner             User     @relation(fields: [ownerId], references: [id])
-  members           WorkspaceMember[]
-  jobs              Job[]
-  leads             Lead[]
-  subscriptions     Subscription[]
-  credits           CreditTransaction[]
+  owner         User                  @relation(fields: [ownerId], references: [id])
+  members       WorkspaceMember[]
+  invitations   WorkspaceInvitation[]
+  jobs          Job[]
+  leads         Lead[]
+  subscriptions Subscription[]
+  credits       CreditTransaction[]
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 # WorkspaceMember
 
-``` prisma
+```prisma
 model WorkspaceMember {
-  id           String   @id @default(uuid())
-  workspaceId  String
-  userId       String
-  role         Role
+  id          String   @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        Role
+  createdAt   DateTime @default(now())
 
-  createdAt    DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
 
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
-  user         User      @relation(fields: [userId], references: [id])
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
 }
 
 enum Role {
@@ -82,24 +81,25 @@ enum Role {
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 # WorkspaceInvitation
 
-``` prisma
+Token is not stored in DB — invite is identified by record ID sent in the invite link email.
+
+```prisma
 model WorkspaceInvitation {
-  id           String   @id @default(uuid())
-  workspaceId  String
-  email        String
-  role         Role
+  id          String           @id @default(uuid())
+  workspaceId String
+  email       String
+  role        Role
+  status      InvitationStatus @default(pending)
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
 
-  token        String   @unique
-  status       InvitationStatus
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  @@index([workspaceId])
 }
 
 enum InvitationStatus {
@@ -109,37 +109,31 @@ enum InvitationStatus {
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 # Job
 
-Each job represents a **lead discovery request**.
+Each job is a lead discovery request. `analysisSchema` defines what fields the AI must return for each lead.
 
-Important field:
-
-`analysisSchema`
-
-This schema defines how AI must analyze each lead.
-
-``` prisma
+```prisma
 model Job {
-  id            String   @id @default(uuid())
-  workspaceId   String
-  createdById   String
+  id             String    @id @default(uuid())
+  workspaceId    String
+  createdById    String
+  searchQuery    String
+  goalPrompt     String
+  aiEnabled      Boolean   @default(true)
+  analysisSchema Json?
+  maxLeads       Int?
+  status         JobStatus @default(pending)
+  createdAt      DateTime  @default(now())
 
-  searchQuery   String
-  goalPrompt    String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads     Lead[]
 
-  aiEnabled     Boolean
-
-  analysisSchema Json
-
-  status        JobStatus
-
-  createdAt     DateTime @default(now())
-
-  workspace     Workspace @relation(fields: [workspaceId], references: [id])
-  leads         Lead[]
+  @@index([workspaceId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 enum JobStatus {
@@ -150,137 +144,104 @@ enum JobStatus {
 }
 ```
 
-------------------------------------------------------------------------
+`analysisSchema` example:
 
-# analysisSchema Example
-
-Example stored in `Job.analysisSchema`
-
-``` json
+```json
 {
   "fields": [
-    {
-      "name": "has_website",
-      "type": "boolean"
-    },
-    {
-      "name": "website_quality",
-      "type": "string",
-      "allowed_values": ["none","poor","average","good"]
-    },
-    {
-      "name": "website_issues",
-      "type": "array"
-    }
+    { "name": "has_website", "type": "boolean" },
+    { "name": "website_quality", "type": "string", "allowed_values": ["none","poor","average","good"] },
+    { "name": "website_issues", "type": "array" }
   ],
   "score_definition": "Businesses without websites get highest score",
   "reason": "string"
 }
 ```
 
-Purpose:
-
--   Ensures AI returns consistent JSON
--   Enables dynamic columns in frontend
--   Enables filtering
-
-------------------------------------------------------------------------
+---
 
 # Lead
 
-Each lead belongs to a job.
+Each lead belongs to a job. Sourced from Google Places API, optionally enriched by crawler, optionally scored by AI.
 
-AI analysis result is stored in:
-
--   `analysisJson`
--   `score`
--   `reason`
-
-``` prisma
+```prisma
 model Lead {
-  id            String   @id @default(uuid())
+  id           String   @id @default(uuid())
+  workspaceId  String
+  jobId        String
+  name         String
+  website      String?
+  phone        String?
+  email        String?
+  address      String?
+  score        Float?
+  reason       String?
+  analysisJson Json?
+  createdAt    DateTime @default(now())
 
-  workspaceId   String
-  jobId         String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  name          String
-  website       String?
-  phone         String?
-  email         String?
-
-  score         Float?
-  reason        String?
-
-  analysisJson  Json?
-
-  createdAt     DateTime @default(now())
-
-  workspace     Workspace @relation(fields: [workspaceId], references: [id])
-  job           Job       @relation(fields: [jobId], references: [id])
+  @@index([workspaceId])
+  @@index([jobId])
+  @@index([score])
+  @@index([createdAt])
 }
 ```
 
-------------------------------------------------------------------------
+`analysisJson` example:
 
-# Example Lead Analysis Result
-
-``` json
+```json
 {
   "has_website": false,
   "website_quality": "none",
   "website_issues": [],
   "score": 95,
-  "reason": "This business has no website which makes it a strong opportunity to sell website development services."
+  "reason": "No website found — strong opportunity to sell web development services."
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 # CreditTransaction
 
-Tracks credit usage.
-
-``` prisma
+```prisma
 model CreditTransaction {
-  id            String   @id @default(uuid())
-  workspaceId   String
+  id          String   @id @default(uuid())
+  workspaceId String
+  amount      Int
+  reason      String
+  createdAt   DateTime @default(now())
 
-  amount        Int
-  reason        String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
-
-  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  @@index([workspaceId])
+  @@index([createdAt])
 }
 ```
 
-Example reasons:
+Example `reason` values: `lead_generation` · `website_crawl` · `ai_scoring`
 
--   lead_generation
--   website_crawl
--   ai_scoring
-
-------------------------------------------------------------------------
+---
 
 # Subscription
 
-Managed through **WHOP payment gateway**.
+Managed through WHOP payment gateway.
 
-``` prisma
+```prisma
 model Subscription {
-  id            String   @id @default(uuid())
-  workspaceId   String
+  id          String             @id @default(uuid())
+  workspaceId String
+  provider    String             @default("whop")
+  externalId  String
+  plan        String
+  status      SubscriptionStatus @default(active)
+  renewsAt    DateTime
+  createdAt   DateTime           @default(now())
 
-  provider      String
-  externalId    String
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  plan          String
-  status        SubscriptionStatus
-
-  renewsAt      DateTime
-  createdAt     DateTime @default(now())
-
-  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  @@index([workspaceId])
 }
 
 enum SubscriptionStatus {
@@ -290,36 +251,23 @@ enum SubscriptionStatus {
 }
 ```
 
-------------------------------------------------------------------------
+---
 
-# Index Recommendations
+# Data Flow Summary
 
-Add indexes for performance.
-
-``` prisma
-@@index([workspaceId])
-@@index([jobId])
-@@index([createdAt])
-@@index([score])
 ```
+User creates job
+  → Job.analysisSchema generated by AI (planned)
 
-------------------------------------------------------------------------
+Search Worker
+  → Creates Lead records from Google Places API results
+  → name, address, website, phone populated
 
-# Final Data Flow
+Crawler Worker (planned)
+  → Enriches Lead: email, additional contact data
 
-User creates job\
-→ AI generates analysisSchema\
-→ Schema saved in Job
+AI Worker (planned)
+  → Populates Lead.score, Lead.reason, Lead.analysisJson
 
-Workers fetch leads\
-→ Website crawler enriches leads
-
-AI worker analyzes leads
-
-Each lead stores:
-
--   score
--   reason
--   analysisJson
-
-Frontend renders columns dynamically from analysisSchema.
+Frontend renders analysisJson columns dynamically from Job.analysisSchema
+```

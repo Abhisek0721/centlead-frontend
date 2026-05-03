@@ -2,311 +2,279 @@
 
 ## Overview
 
-Centlead backend is designed as a scalable job processing system that
-collects business leads, enriches them with data, analyzes them using
-AI, and ranks opportunities.
+Centlead backend is a scalable job processing system that collects
+business leads via Google Places API, enriches them through website
+crawling, scores them with AI, and ranks opportunities for the user.
 
-Architecture style: - Modular monolith initially - Worker-based
-asynchronous processing - Queue driven architecture
+Architecture style:
+- Modular monolith
+- Worker-based asynchronous processing
+- Queue-driven architecture
 
-Primary stack: - NestJS with FastifyAdapter - PostgreSQL - Prisma ORM - RabbitMQ - Redis -
-Clerk (authentication) - Resend (email) - WHOP (payments) - Docker
-Compose
+Primary stack:
+- NestJS with FastifyAdapter
+- PostgreSQL
+- Prisma ORM
+- RabbitMQ
+- Redis
+- Custom JWT auth (email/password + Google OAuth via Passport)
+- Resend (email)
+- WHOP (payments)
+- Docker Compose
 
-------------------------------------------------------------------------
+---
 
 # Infrastructure
 
 Services managed with Docker Compose:
 
--   postgres
--   rabbitmq
--   redis
--   api (nestjs with fastify adapter. Eg: NestFactory.create(AppModule, new FastifyAdapter()))
--   workers (nestjs worker container)
+- postgres
+- rabbitmq
+- redis
+- api (NestJS with FastifyAdapter)
+- workers (NestJS worker container)
 
-Example services:
-
-postgres rabbitmq redis api worker
-
-------------------------------------------------------------------------
+---
 
 # Authentication
 
-Authentication provider: Clerk
+Authentication is handled with a custom JWT system — no third-party auth provider.
 
-Reasons: - OAuth support - Google login support - user management
-handled externally - no need for Google business verification
+Two login methods:
+- Email + password (bcryptjs hashing, salt rounds: 12)
+- Google OAuth (Passport `passport-google-oauth20`)
 
-Frontend authentication handled by Clerk SDK.
+On successful login or signup, a signed JWT is returned:
 
-Backend receives Clerk JWT.
+```
+{ sub: userId, email }
+```
 
-JWT verification middleware validates:
+JWT is verified on every protected request via `JwtAuthGuard` (Passport JWT strategy).
 
--   user id
--   email
--   workspace id
+Token signing uses `envConstant.JWT_SECRET` and `envConstant.JWT_EXPIRES_IN` (default: 7d).
 
-------------------------------------------------------------------------
+Email verification flow:
+1. On signup, a 6-digit OTP is generated and stored in Redis with a 24h TTL
+2. OTP sent via Resend
+3. User submits OTP → `emailVerified` set to `true` on User record
+
+---
 
 # Token Management
 
-Tokens stored temporarily in Redis.
+Tokens stored in Redis.
 
 Types:
 
-invite_token email_verification_token job_execution_token
+| Key pattern | TTL | Purpose |
+|---|---|---|
+| `email_verification:{userId}` | 24h | OTP for email verify |
+| `invite_token:{token}` | 24h | Workspace invite links |
+| `password_reset:{userId}` | 15min | Password reset OTP |
 
-Redis TTL example:
-
-invite_token: 24h verification_token: 24h
-
-------------------------------------------------------------------------
+---
 
 # Workspace Architecture
 
-All resources belong to workspace.
+All resources belong to a workspace.
 
 Relationship:
 
-User → Workspace Workspace → Jobs Workspace → Leads Workspace → Credits
+```
+User → Workspace (owner)
+Workspace → WorkspaceMember[]
+Workspace → Jobs[]
+Workspace → Leads[]
+Workspace → Credits[]
+Workspace → Subscriptions[]
+```
 
-Tables:
-
-users workspaces workspace_members workspace_invitations jobs leads
-subscriptions credit_transactions
-
-------------------------------------------------------------------------
+---
 
 # Role System
 
-Roles:
+Roles (enum `Role`):
 
-owner admin member viewer
+```
+owner | admin | member | viewer
+```
 
 Permissions:
 
-Owner - billing - invite members - remove members
+| Role | Can do |
+|---|---|
+| owner | billing, invite, remove members |
+| admin | manage jobs, invite members |
+| member | create jobs, view leads |
+| viewer | view leads only |
 
-Admin - manage jobs - invite members
-
-Member - create jobs - view leads
-
-Viewer - view leads only
-
-------------------------------------------------------------------------
+---
 
 # Team Invite Flow
 
-1 Invite member
+1. Owner enters email and role
+2. Backend creates `WorkspaceInvitation` record (status: pending, expiresAt: +24h)
+3. Email sent via Resend with invite link containing invitation ID
+4. User opens invite link → if unregistered, prompted to create account
+5. Backend accepts invite: `WorkspaceMember` record created, invitation status set to `accepted`
 
-Owner enters email and role.
-
-2 Backend generates invite token
-
-Stored in Redis.
-
-3 Email sent using Resend
-
-Template variables:
-
-workspace_name invite_link
-
-4 User opens invite link
-
-If not registered: create account via Clerk
-
-If registered: join workspace
-
-5 workspace_members record created
-
-------------------------------------------------------------------------
+---
 
 # Job Processing Pipeline
 
+```
 User creates job
+  ↓ Job stored in DB (status: pending)
+  ↓ Job ID pushed to job_queue
+  ↓ Search Worker: calls Google Places API, stores leads, pushes to crawler_queue
+  ↓ Crawler Worker: visits websites, extracts data, updates leads
+  ↓ AI Worker: batch-analyzes leads, stores score + analysisJson
+  ↓ Job status → completed
+```
 
-Job stored in DB
+---
 
-Job pushed to RabbitMQ
+# Lead Collection (Search Worker)
 
-Queue pipeline:
+Search Worker calls the Google Places **Text Search (New)** API:
 
-job_queue crawler_queue ai_queue
+```
+POST https://places.googleapis.com/v1/places:searchText
+```
 
-Workers:
+Headers:
+- `X-Goog-Api-Key: GOOGLE_PLACES_API_KEY`
+- `X-Goog-FieldMask: places.displayName,places.formattedAddress,places.location,places.websiteUri,places.nationalPhoneNumber,nextPageToken`
 
-Search Worker Crawler Worker AI Worker
+Body:
+```json
+{
+  "textQuery": "<searchQuery from job>",
+  "minRating": 3.8,
+  "pageToken": "<nextPageToken or empty string>"
+}
+```
 
-------------------------------------------------------------------------
+Pagination: Worker follows `nextPageToken` until exhausted, `maxLeads` is reached, or a safety cap of 10 pages is hit.
 
-# Lead Collection
+Each place is stored as a `Lead` record with: `name`, `formattedAddress`, `websiteUri`, `nationalPhoneNumber`.
 
-Search Worker calls:
+Leads with a website are pushed to `crawler_queue` for enrichment.
 
-Google Places API
+---
 
-Returns businesses.
+# Website Crawling (Crawler Worker)
 
-Stored as leads.
+Crawler Worker receives `CrawlerQueuePayload` from `crawler_queue`.
 
-Fields:
+Responsibilities (planned):
+- Visit website
+- Extract emails, contact links, social links
+- Detect tech stack
+- Update lead record with crawled data
 
-name phone website address
+---
 
-------------------------------------------------------------------------
+# AI Lead Scoring (AI Worker)
 
-# Website Crawling
+AI Worker receives lead IDs from `ai_queue`.
 
-Crawler Worker:
-
-Visits website
-
-Extracts:
-
-emails contact page social links technology stack
-
-Data saved to lead record.
-
-------------------------------------------------------------------------
-
-# AI Lead Scoring
-
-AI Worker analyzes leads.
-
-Batch processing used.
-
-Example batch size:
-
-50 leads
+Batch processing: 50 leads per AI request (90% cost reduction vs per-lead).
 
 Prompt contains:
+- User's goal prompt
+- Leads data
+- Job's `analysisSchema` (defines what fields to return)
 
-user goal lead information
+AI returns structured JSON. Stored in `lead.analysisJson`, `lead.score`, `lead.reason`.
 
-AI returns JSON scoring results.
-
-Stored in analysis_json.
-
-------------------------------------------------------------------------
+---
 
 # Credit System
 
 Credits belong to workspace.
 
-Actions consume credits.
+| Action | Credits consumed |
+|---|---|
+| lead_generation | 1 |
+| website_crawl | 1 |
+| ai_scoring | 2 |
 
-Example:
+Credits reset every billing cycle. Unused subscription credits do not carry forward. Purchased extra credits do not expire.
 
-lead_generation = 1 credit website_crawl = 1 credit ai_scoring = 2
-credits
-
-Credits reset every billing cycle.
-
-Extra purchased credits do not expire.
-
-------------------------------------------------------------------------
+---
 
 # Subscription System
 
-Payment gateway:
+Payment gateway: WHOP
 
-WHOP
+Plans: Starter · Growth · Pro · Agency
 
-Plans:
+WHOP webhook events handled:
+- `subscription_created`
+- `subscription_renewed`
+- `subscription_cancelled`
 
-Starter Growth Pro Agency
+Backend updates workspace `plan`, `monthlyCredits`, and `creditsRemaining` on webhook.
 
-WHOP webhook events:
-
-subscription_created subscription_renewed subscription_cancelled
-
-Backend updates workspace subscription.
-
-------------------------------------------------------------------------
+---
 
 # Free Trial
 
-7 day trial
+- Duration: 7 days (`trialEndsAt` on Workspace)
+- Credits: 300
+- AI scoring mandatory, cannot be disabled
+- Max 100 leads per job
+- Exports allowed
 
-300 credits
-
-Restrictions:
-
-AI scoring mandatory max 100 leads per job exports allowed
-
-------------------------------------------------------------------------
-
-# AI Toggle UX
-
-Do NOT display:
-
-AI toggle disabled
-
-Instead show:
-
-AI lead intelligence enabled during trial. Upgrade to customize
-analysis.
-
-------------------------------------------------------------------------
-
-# AI Disable Attempt
-
-If user tries to disable AI during trial:
-
-Show message:
-
-AI scoring is part of the Centlead intelligence engine.
-
-Upgrade to a paid plan to disable AI scoring and generate unlimited raw
-leads.
-
-------------------------------------------------------------------------
-
-# Queue Scaling
-
-RabbitMQ queues:
-
-job_queue crawler_queue ai_queue
-
-Workers scale horizontally.
-
-Multiple worker containers can run simultaneously.
-
-------------------------------------------------------------------------
+---
 
 # API Modules (NestJS)
 
-Modules:
+| Module | Responsibility |
+|---|---|
+| auth | signup, login, Google OAuth, email verify, password reset |
+| workspace | workspace CRUD, settings |
+| team | member management, invitations |
+| jobs | create/list/get jobs |
+| leads | list/get leads |
+| credits | credit balance, usage |
+| billing | subscription, WHOP webhooks |
+| notifications | email sending via Resend |
+| places | Google Places API integration |
 
-auth workspace team jobs leads credits billing notifications
+---
 
-------------------------------------------------------------------------
+# Queue Architecture
+
+| Queue | Producer | Consumer |
+|---|---|---|
+| `job_queue` | jobs.service | JobConsumer |
+| `crawler_queue` | JobConsumer | CrawlerConsumer |
+| `ai_queue` | CrawlerConsumer (planned) | AiConsumer |
+
+Workers scale horizontally — multiple worker containers can process queues concurrently.
+
+---
 
 # Database
 
 PostgreSQL with Prisma ORM.
 
-JSON fields used for:
+JSON fields:
+- `Job.analysisSchema` — AI output schema definition
+- `Lead.analysisJson` — per-lead AI analysis result
 
-analysis_json lead_metadata
+Indexes on all `workspaceId`, `jobId`, `score`, `createdAt` fields.
 
-Indexes required:
-
-workspace_id job_id score created_at
-
-------------------------------------------------------------------------
-
-# Logging
-
-System logs:
-
-job execution crawler errors AI responses credit usage
-
-------------------------------------------------------------------------
+---
 
 # Future Improvements
 
-Email verification LinkedIn enrichment CRM integrations automated
-outreach
+- Website crawling implementation
+- AI scoring implementation
+- Email verification enforcement on login
+- LinkedIn enrichment
+- CRM integrations
+- Automated outreach

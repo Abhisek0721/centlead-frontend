@@ -2,251 +2,223 @@
 
 ## Stack
 
-Framework: Next.js
+| Tool | Version | Purpose |
+|---|---|---|
+| Next.js | 16.2 | Framework (App Router) |
+| React | 19 | UI runtime |
+| Ant Design | 6.x | Component library |
+| Tailwind CSS | 4 | Utility styling |
+| Framer Motion | 12 | Animations and page transitions |
+| TanStack React Query | 5 | Server state, caching |
+| Axios | 1.x | HTTP client |
+| React Hot Toast | 2.x | Notifications |
+| Lucide React | 1.x | Icons |
 
-UI library: Ant Design
+Auth: custom JWT (email/password + Google OAuth) — no third-party auth provider.
 
-State management: TanStack React Query
-
-HTTP client: Axios
-
-Notifications: React Hot Toast
-
-Auth: Clerk
-
-------------------------------------------------------------------------
+---
 
 # App Structure
 
-Pages:
+```
+/               → Landing page
+/auth/login     → Login
+/auth/signup    → Sign up
+/auth/verify    → Email verification
+/app            → Web application (authenticated)
+  /app/dashboard
+  /app/jobs
+  /app/leads
+  /app/team
+  /app/billing
+  /app/settings
+```
 
-/ -\> Landing Page
+---
 
-/app -\> Web Application
+# Auth Layout
 
-Sections:
+`/auth/*` pages use `AuthLayoutShell`:
+- Left: form area with AnimatePresence page transitions (Framer Motion)
+- Right: dark panel — three-zone layout:
+  - **Zone 1 (Pitch):** "Lead Intelligence Platform" badge + gradient headline + subtitle
+  - **Zone 2 (Proof):** Browser frame product mockup with floating "Job running" and "+48 leads" cards
+  - **Zone 3 (Numbers):** 10× pipeline growth · 94% lead score accuracy · 50+ enrichment sources
 
-Dashboard Jobs Leads Team Billing Settings
+---
 
-------------------------------------------------------------------------
+# JWT Storage
+
+JWT stored in `localStorage` via helper in `src/lib/auth.ts` (or `localStorage.ts`).
+
+Functions: `setToken`, `getToken`, `removeToken`
+
+Every Axios request includes:
+
+```
+Authorization: Bearer <token>
+```
+
+---
 
 # Theme
 
-Recommended theme:
+Design system:
+- Background: white (`#FAFAFA` / `#FFFFFF`)
+- Brand: indigo `#4F46E5` → purple `#7C3AED` gradient
+- Dark mode: supported via `data-theme="dark"` on `<html>`
 
-Dark modern SaaS theme
+Dark mode colors:
+- Background: `#09090F`
+- Brand: `#818CF8`
 
-Primary color: Electric Blue
+Ant Design custom theme token applied via `AntdRegistry` in `layout.tsx`.
 
-Background: Dark slate
-
-Accent color: Purple gradient
-
-Reason:
-
-Feels modern Matches AI brand Better for data heavy UI
-
-------------------------------------------------------------------------
+---
 
 # Layout
 
-Main layout:
+App shell (`/app` route group):
+- Sidebar navigation
+- Top navigation bar (workspace switcher, credits display, user menu)
+- Content panel
 
-Sidebar navigation Top navigation bar Content panel
+Sidebar items: Dashboard · Jobs · Leads · Team · Billing · Settings
 
-Sidebar items:
-
-Dashboard Jobs Leads Team Billing Settings
-
-------------------------------------------------------------------------
+---
 
 # Job Creation Flow
 
-User clicks:
+User fills:
+- Search Query (e.g. "restaurants near guwahati")
+- Goal Prompt (e.g. "find restaurants without websites")
+- Max Leads (optional)
+- AI Toggle (locked ON during trial)
 
-Create Job
+During trial: AI toggle shows "AI lead intelligence enabled during trial. Upgrade to customize analysis."
 
-Fields:
-
-Search Query Goal Prompt AI Toggle
-
-During trial:
-
-AI toggle locked.
-
-------------------------------------------------------------------------
-
-# AI Toggle Messaging
-
-Display:
-
-AI lead intelligence enabled during trial. Upgrade to customize
-analysis.
-
-------------------------------------------------------------------------
+---
 
 # Job Results UI
 
-Table view
+Table view with columns:
+- Business Name
+- Address
+- Website
+- Phone
+- Score (highlighted, color-coded)
+- Reason
 
-Columns:
+Sorted by score descending (highest opportunities first).
 
-Business Name Website Phone Score Reason
-
-Score highlighted.
-
-Top opportunities shown first.
-
-------------------------------------------------------------------------
+---
 
 # Lead Details
 
-Click lead to open drawer.
+Click lead → opens Ant Design drawer.
 
-Details:
+Details shown:
+- Contact info (phone, email, address)
+- Website link
+- AI analysis fields (from `analysisJson`)
+- Score and reason
+- AI explanation
 
-contact info website analysis AI explanation emails
-
-------------------------------------------------------------------------
+---
 
 # Credit Display
 
-Header shows:
+Top navigation shows: **Credits Remaining: 1,450**
 
-Remaining credits
+Trial banner: "7-day trial active · 300 credits available"
 
-Example:
-
-Credits Remaining: 1450
-
-------------------------------------------------------------------------
-
-# Trial Display
-
-Banner:
-
-7 day trial active
-
-300 credits available
-
-------------------------------------------------------------------------
+---
 
 # Team Management
 
-Team page
+Members list table: Name · Role · Actions
 
-Members list
+Invite modal fields: email · role
 
-Columns:
-
-Name Role Actions
-
-Invite member button.
-
-Invite modal:
-
-email role
-
-------------------------------------------------------------------------
+---
 
 # Billing Page
 
 Shows:
+- Current plan
+- Credits remaining
+- Upgrade CTA
 
-Current plan Credits remaining Upgrade plan
+Payment handled by WHOP (redirect to WHOP checkout).
 
-Payment handled by WHOP.
-
-------------------------------------------------------------------------
-
-# API Integration
-
-Axios used.
-
-Global axios instance.
-
-Headers include:
-
-Authorization Bearer Token
-
-------------------------------------------------------------------------
-
-# Local Storage Helper
-
-localStorage.ts
-
-Functions:
-
-setToken getToken removeToken
-
-Used for JWT storage.
-
-------------------------------------------------------------------------
+---
 
 # React Query Usage
 
-Used for:
+Cached queries:
+- `jobs` — list and status polling
+- `leads` — list by job
+- `workspace` — workspace info, credits
+- `team` — members list
 
-jobs leads workspace team
+Polling: job status refetches every few seconds while `status === 'running'`.
 
-Caching enabled.
-
-------------------------------------------------------------------------
+---
 
 # Notifications
 
 React Hot Toast used for:
+- Job created
+- Invite sent
+- Error alerts
+- Success messages
 
-job created invite sent error alerts success messages
-
-------------------------------------------------------------------------
+---
 
 # Loading UX
 
-Skeleton loaders used.
+Skeleton loaders for tables and cards.
 
-Job processing shows:
+Job processing status: shows "Processing leads..." while job is running.
 
-Processing leads...
-
-------------------------------------------------------------------------
+---
 
 # Empty States
 
 Example:
 
+```
 No jobs yet.
-
 Create your first lead discovery job.
+```
 
-------------------------------------------------------------------------
+---
 
 # Conversion Prompts
 
-If user hits trial limits:
+On trial limit hit → upgrade modal:
 
-Show upgrade modal.
+"Upgrade to unlock unlimited lead intelligence."
 
-Message:
+On AI disable attempt:
 
-Upgrade to unlock unlimited lead intelligence.
+"AI scoring is part of the Centlead intelligence engine. Upgrade to a paid plan to disable AI scoring."
 
-------------------------------------------------------------------------
+---
 
-# Landing Page
+# Landing Page (`/`)
 
 Sections:
+- Hero with product mockup
+- Features
+- Pricing
+- Testimonials / social proof
+- FAQ
 
-Hero Product demo Features Pricing Testimonials FAQ
+CTA: "Start free trial"
 
-CTA:
-
-Start free trial
-
-------------------------------------------------------------------------
+---
 
 # Key UX Goal
 
-User must discover high opportunity leads within minutes.
-
-This creates the conversion moment.
+User discovers 5–10 high-opportunity leads within minutes of creating their first job. That moment drives subscription upgrades.
