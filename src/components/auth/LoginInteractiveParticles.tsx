@@ -41,57 +41,190 @@ function drawPeopleGroup(ctx: CanvasRenderingContext2D, w: number, h: number) {
   drawPerson(cx, cy + 14 * s, 1.0)
 }
 
-// ── Shape 2: Target / Bullseye with Arrow ─────────────────────────────────────
-// Precision targeting — ICP qualification & lead scoring
-function drawTarget(ctx: CanvasRenderingContext2D, w: number, h: number) {
+// ── Shape 2: Business Deal Handshake ─────────────────────────────────────────
+// Business woman (left, long hair) shaking hands with a suited professional
+function drawBusinessDeal(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const cx = w / 2, cy = h * 0.50
-  const s = Math.min(w, h) / 480
+  const s  = Math.min(w, h) / 480
 
+  ctx.fillStyle   = '#fff'
   ctx.strokeStyle = '#fff'
-  ctx.fillStyle = '#fff'
+  ctx.lineCap     = 'round'
+  ctx.lineJoin    = 'round'
 
-  // Concentric rings — 4 rings, outermost to innermost
-  const radii = [148 * s, 108 * s, 68 * s, 30 * s]
-  for (let i = 0; i < radii.length; i++) {
-    ctx.lineWidth = i === radii.length - 1 ? 0 : 3 * s
-    if (i === radii.length - 1) {
-      // filled bullseye center
-      ctx.beginPath(); ctx.arc(cx, cy, radii[i], 0, Math.PI * 2); ctx.fill()
-    } else {
-      ctx.beginPath(); ctx.arc(cx, cy, radii[i], 0, Math.PI * 2); ctx.stroke()
-    }
-  }
+  // Shared vertical layout
+  const headR   = 26 * s
+  const headY   = cy - 108 * s
+  const neckBot = headY + headR * 0.85 + 13 * s
+  const sTop    = neckBot
+  const sBot    = cy + 36 * s
+  const armY    = sTop + 20 * s
+  const legBot  = cy + 110 * s
 
-  // Arrow coming from upper-right, tip lands at center
-  const tipX = cx, tipY = cy
-  const tailX = cx + 148 * s, tailY = cy - 148 * s
-  const angle = Math.atan2(tipY - tailY, tipX - tailX)
-  const arrowLen = Math.sqrt((tipX - tailX) ** 2 + (tipY - tailY) ** 2)
+  // ── Left: Business Woman ────────────────────────────────────────────────────
+  const lx  = cx - 88 * s
+  const lSW = 54 * s, lWW = 44 * s
 
-  ctx.lineWidth = 5.5 * s
-  ctx.beginPath(); ctx.moveTo(tailX, tailY); ctx.lineTo(tipX, tipY); ctx.stroke()
-
-  // Arrowhead
-  const headLen = 22 * s
+  // Long flowing hair (drawn before head so head overlaps)
+  ctx.lineWidth = 20 * s
   ctx.beginPath()
-  ctx.moveTo(tipX, tipY)
-  ctx.lineTo(tipX - headLen * Math.cos(angle - 0.42), tipY - headLen * Math.sin(angle - 0.42))
-  ctx.lineTo(tipX - headLen * Math.cos(angle + 0.42), tipY - headLen * Math.sin(angle + 0.42))
+  ctx.moveTo(lx - headR * 0.62, headY - headR * 0.3)
+  ctx.quadraticCurveTo(lx - headR * 1.55, headY + headR * 2.0, lx - headR * 0.95, sTop + 22 * s)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(lx + headR * 0.62, headY - headR * 0.3)
+  ctx.quadraticCurveTo(lx + headR * 1.15, headY + headR * 2.0, lx + headR * 0.55, sTop + 22 * s)
+  ctx.stroke()
+  ctx.lineWidth = 24 * s
+  ctx.beginPath()
+  ctx.arc(lx, headY - headR * 0.12, headR * 1.08, -Math.PI * 0.87, -Math.PI * 0.13, false)
+  ctx.stroke()
+
+  // Head
+  ctx.beginPath(); ctx.arc(lx, headY, headR, 0, Math.PI * 2); ctx.fill()
+
+  // Neck
+  ctx.fillRect(lx - 8 * s, headY + headR * 0.72, 16 * s, 15 * s)
+
+  // Suit jacket body
+  ctx.beginPath()
+  ctx.moveTo(lx - lSW / 2, sTop); ctx.lineTo(lx + lSW / 2, sTop)
+  ctx.lineTo(lx + lWW / 2, sBot); ctx.lineTo(lx - lWW / 2, sBot)
   ctx.closePath(); ctx.fill()
 
-  // Arrow shaft feather lines
-  ctx.lineWidth = 2.5 * s
-  const featherPct = 0.18
-  const fx = tailX + (tipX - tailX) * featherPct
-  const fy = tailY + (tipY - tailY) * featherPct
-  const perp = angle + Math.PI / 2
-  const fl = 18 * s
-  ctx.beginPath(); ctx.moveTo(fx + Math.cos(perp) * fl, fy + Math.sin(perp) * fl); ctx.lineTo(fx - Math.cos(perp) * fl, fy - Math.sin(perp) * fl); ctx.stroke()
-  const fx2 = tailX + (tipX - tailX) * (featherPct + 0.09)
-  const fy2 = tailY + (tipY - tailY) * (featherPct + 0.09)
-  ctx.beginPath(); ctx.moveTo(fx2 + Math.cos(perp) * fl * 0.65, fy2 + Math.sin(perp) * fl * 0.65); ctx.lineTo(fx2 - Math.cos(perp) * fl * 0.65, fy2 - Math.sin(perp) * fl * 0.65); ctx.stroke()
+  // Lapels
+  ctx.lineWidth = 3.2 * s
+  ctx.beginPath()
+  ctx.moveTo(lx - 5 * s, sTop + 5 * s)
+  ctx.lineTo(lx - lSW * 0.42, sTop + 2 * s)
+  ctx.lineTo(lx - lSW * 0.33, sTop + 28 * s)
+  ctx.lineTo(lx - 5 * s, sTop + 18 * s)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(lx + 5 * s, sTop + 5 * s)
+  ctx.lineTo(lx + lSW * 0.42, sTop + 2 * s)
+  ctx.lineTo(lx + lSW * 0.33, sTop + 28 * s)
+  ctx.lineTo(lx + 5 * s, sTop + 18 * s)
+  ctx.stroke()
 
-  void arrowLen
+  // Collar V
+  ctx.lineWidth = 2 * s
+  ctx.beginPath(); ctx.moveTo(lx - 9 * s, neckBot); ctx.lineTo(lx, sTop + 7 * s); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(lx + 9 * s, neckBot); ctx.lineTo(lx, sTop + 7 * s); ctx.stroke()
+
+  // Left arm — down at side
+  ctx.lineWidth = 15 * s
+  ctx.beginPath()
+  ctx.moveTo(lx - lSW / 2, armY)
+  ctx.lineTo(lx - lSW / 2 - 5 * s, armY + 52 * s)
+  ctx.stroke()
+
+  // Right arm — extended to center for handshake
+  ctx.lineWidth = 15 * s
+  ctx.beginPath()
+  ctx.moveTo(lx + lSW / 2, armY)
+  ctx.quadraticCurveTo(lx + lSW / 2 + 32 * s, armY + 6 * s, cx - 18 * s, armY + 14 * s)
+  ctx.stroke()
+
+  // Skirt — slightly flared below torso
+  ctx.lineWidth = 24 * s
+  ctx.beginPath(); ctx.moveTo(lx - lWW / 2 + 4 * s, sBot); ctx.lineTo(lx - 22 * s, sBot + 42 * s); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(lx + lWW / 2 - 4 * s, sBot); ctx.lineTo(lx + 22 * s, sBot + 42 * s); ctx.stroke()
+  ctx.lineWidth = 14 * s
+  ctx.beginPath(); ctx.moveTo(lx - 22 * s, sBot + 42 * s); ctx.lineTo(lx - 16 * s, legBot); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(lx + 22 * s, sBot + 42 * s); ctx.lineTo(lx + 16 * s, legBot); ctx.stroke()
+
+  // ── Right: Suited Professional ──────────────────────────────────────────────
+  const rx  = cx + 88 * s
+  const rSW = 54 * s, rWW = 44 * s
+
+  // Head
+  ctx.beginPath(); ctx.arc(rx, headY, headR, 0, Math.PI * 2); ctx.fill()
+
+  // Short hair stub
+  ctx.lineWidth = 11 * s
+  ctx.beginPath()
+  ctx.arc(rx, headY - headR * 0.18, headR * 1.0, -Math.PI * 0.88, -Math.PI * 0.12, false)
+  ctx.stroke()
+
+  // Neck
+  ctx.fillRect(rx - 8 * s, headY + headR * 0.72, 16 * s, 15 * s)
+
+  // Suit jacket body
+  ctx.beginPath()
+  ctx.moveTo(rx - rSW / 2, sTop); ctx.lineTo(rx + rSW / 2, sTop)
+  ctx.lineTo(rx + rWW / 2, sBot); ctx.lineTo(rx - rWW / 2, sBot)
+  ctx.closePath(); ctx.fill()
+
+  // Lapels
+  ctx.lineWidth = 3.2 * s
+  ctx.beginPath()
+  ctx.moveTo(rx - 5 * s, sTop + 5 * s)
+  ctx.lineTo(rx - rSW * 0.42, sTop + 2 * s)
+  ctx.lineTo(rx - rSW * 0.33, sTop + 28 * s)
+  ctx.lineTo(rx - 5 * s, sTop + 18 * s)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(rx + 5 * s, sTop + 5 * s)
+  ctx.lineTo(rx + rSW * 0.42, sTop + 2 * s)
+  ctx.lineTo(rx + rSW * 0.33, sTop + 28 * s)
+  ctx.lineTo(rx + 5 * s, sTop + 18 * s)
+  ctx.stroke()
+
+  // Collar V
+  ctx.lineWidth = 2 * s
+  ctx.beginPath(); ctx.moveTo(rx - 9 * s, neckBot); ctx.lineTo(rx, sTop + 7 * s); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(rx + 9 * s, neckBot); ctx.lineTo(rx, sTop + 7 * s); ctx.stroke()
+
+  // Tie
+  const tW = 11 * s, tTop = sTop + 6 * s, tBot = sBot - 6 * s
+  ctx.beginPath()
+  ctx.moveTo(rx - tW * 0.42, tTop);          ctx.lineTo(rx + tW * 0.42, tTop)
+  ctx.lineTo(rx + tW * 0.50, tTop + tW * 0.8)
+  ctx.lineTo(rx + tW * 0.44, tBot - 12 * s); ctx.lineTo(rx, tBot)
+  ctx.lineTo(rx - tW * 0.44, tBot - 12 * s)
+  ctx.lineTo(rx - tW * 0.50, tTop + tW * 0.8)
+  ctx.closePath(); ctx.fill()
+
+  // Right arm — down at side
+  ctx.lineWidth = 15 * s
+  ctx.beginPath()
+  ctx.moveTo(rx + rSW / 2, armY)
+  ctx.lineTo(rx + rSW / 2 + 5 * s, armY + 52 * s)
+  ctx.stroke()
+
+  // Left arm — extended to center for handshake
+  ctx.lineWidth = 15 * s
+  ctx.beginPath()
+  ctx.moveTo(rx - rSW / 2, armY)
+  ctx.quadraticCurveTo(rx - rSW / 2 - 32 * s, armY + 6 * s, cx + 18 * s, armY + 14 * s)
+  ctx.stroke()
+
+  // Legs — straight trousers
+  ctx.lineWidth = 20 * s
+  ctx.beginPath(); ctx.moveTo(rx - rWW / 2 + 6 * s, sBot); ctx.lineTo(rx - 14 * s, legBot); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(rx + rWW / 2 - 6 * s, sBot); ctx.lineTo(rx + 14 * s, legBot); ctx.stroke()
+
+  // ── Handshake ───────────────────────────────────────────────────────────────
+  // Main palm/clasp mass
+  ctx.beginPath()
+  ctx.ellipse(cx, armY + 14 * s, 22 * s, 13 * s, -0.18, 0, Math.PI * 2)
+  ctx.fill()
+  // Top fingers (woman's hand gripping)
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath()
+    ctx.arc(cx - 16 * s + i * 11 * s, armY + 3 * s, 5.5 * s, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Bottom fingers (man's hand gripping)
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath()
+    ctx.arc(cx - 14 * s + i * 11 * s, armY + 24 * s, 5.5 * s, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Thumb arcs
+  ctx.beginPath(); ctx.arc(cx - 22 * s, armY + 12 * s, 5 * s, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(cx + 22 * s, armY + 16 * s, 5 * s, 0, Math.PI * 2); ctx.fill()
 }
 
 // ── Shape 3: Lead Magnet ──────────────────────────────────────────────────────
@@ -347,7 +480,7 @@ export default function LoginInteractiveParticles() {
     let width = 1, height = 1
     let rafId = 0, disposed = false
     let phaseElapsed = 0, lastTime = performance.now()
-    const shapes = [drawPeopleGroup, drawTarget, drawMagnet, drawAIHexagon]
+    const shapes = [drawPeopleGroup, drawBusinessDeal, drawMagnet, drawAIHexagon]
     let targets: Float32Array[] = []
     let cur = 0, nxt = 1, holding = true
     const HOLD = 3.8, TRANS = 2.4
