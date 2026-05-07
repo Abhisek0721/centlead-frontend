@@ -51,6 +51,6 @@ next-env.d.ts
 /.clerk/
 
 # package lock files
-package-lock.json
-yarn.lock
-pnpm.lock
+/package-lock.json
+/yarn.lock
+/pnpm.lock
