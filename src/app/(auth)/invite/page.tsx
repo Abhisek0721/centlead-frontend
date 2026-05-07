@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axiosInstance from '@lib/axios';
 import { API_ROUTES } from '@constants/apiRoutes';
@@ -19,6 +19,14 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function InvitePage() {
+  return (
+    <Suspense>
+      <InviteContent />
+    </Suspense>
+  );
+}
+
+function InviteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { isSignedIn, loading: authLoading } = useAuth();

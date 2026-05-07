@@ -7,6 +7,8 @@ import envConstant from '@constants/envConstant';
 interface AuthUser {
   id: string;
   email: string;
+  firstName: string | null;
+  lastName: string | null;
 }
 
 interface AuthContextType {
@@ -34,7 +36,7 @@ function decodeToken(token: string): AuthUser | null {
     if (!payload.sub || !payload.email) return null;
     const now = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < now) return null;
-    return { id: payload.sub, email: payload.email };
+    return { id: payload.sub, email: payload.email, firstName: payload.firstName ?? null, lastName: payload.lastName ?? null };
   } catch {
     return null;
   }
