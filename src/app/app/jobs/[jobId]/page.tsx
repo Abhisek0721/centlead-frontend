@@ -523,32 +523,50 @@ export default function JobDetailPage() {
             )}
 
             {/* Analysis fields */}
-            {selectedLead.analysisJson && Object.keys(selectedLead.analysisJson).length > 0 && (
-              <>
-                <Divider style={{ margin: '0 0 16px' }} />
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                    AI analysis
+            {selectedLead.analysisJson && (() => {
+              // analysisJson can be a flat object {key: val} or an array [{name, value, ...}]
+              const raw = selectedLead.analysisJson as unknown;
+              const entries: { label: string; value: unknown }[] = Array.isArray(raw)
+                ? (raw as { name?: string; value?: unknown }[]).map((f) => ({
+                    label: String(f.name ?? ''),
+                    value: f.value,
+                  })).filter((f) => f.label)
+                : Object.entries(raw as Record<string, unknown>).map(([k, v]) => ({
+                    label: k,
+                    value: v,
+                  }));
+
+              if (entries.length === 0) return null;
+
+              return (
+                <>
+                  <Divider style={{ margin: '0 0 16px' }} />
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                      AI analysis
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {entries.map(({ label, value: val }) => (
+                        <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'capitalize' }}>
+                            {label.replace(/_/g, ' ')}
+                          </span>
+                          <span style={{ fontSize: 13, color: '#374151' }}>
+                            {typeof val === 'boolean'
+                              ? val ? 'Yes' : 'No'
+                              : Array.isArray(val)
+                                ? (val as unknown[]).join(', ')
+                                : typeof val === 'object' && val !== null
+                                  ? JSON.stringify(val)
+                                  : String(val ?? '—')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {Object.entries(selectedLead.analysisJson as Record<string, unknown>).map(([key, val]) => (
-                      <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'capitalize' }}>
-                          {key.replace(/_/g, ' ')}
-                        </span>
-                        <span style={{ fontSize: 13, color: '#374151' }}>
-                          {typeof val === 'boolean'
-                            ? val ? 'Yes' : 'No'
-                            : typeof val === 'object'
-                              ? JSON.stringify(val)
-                              : String(val ?? '—')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              );
+            })()}
           </div>
         )}
       </Drawer>
