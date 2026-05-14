@@ -14,6 +14,8 @@ import {
   Tooltip,
   Progress,
   Empty,
+  Drawer,
+  Divider,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -26,6 +28,7 @@ import {
   PhoneOutlined,
   MailOutlined,
   EnvironmentOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { useWorkspaceContext } from '@providers/WorkspaceProvider';
 import { useJob } from '@hooks/useJobs';
@@ -64,23 +67,68 @@ function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) return <span style={{ color: '#9CA3AF' }}>—</span>;
   const color = score >= 70 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        background: `${color}15`,
+        border: `1.5px solid ${color}40`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: 800,
+        fontSize: 14,
+        color,
+      }}
+    >
+      {Math.round(score)}
+    </div>
+  );
+}
+
+function ScoreBar({ score }: { score: number | null }) {
+  if (score === null) return <span style={{ color: '#9CA3AF', fontSize: 13 }}>Not scored</span>;
+  const color = score >= 70 ? '#10B981' : score >= 40 ? '#F59E0B' : '#EF4444';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
+          width: 52,
+          height: 52,
+          borderRadius: 12,
           background: `${color}15`,
-          border: `1.5px solid ${color}40`,
+          border: `2px solid ${color}50`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontWeight: 800,
-          fontSize: 13,
+          fontWeight: 900,
+          fontSize: 18,
           color,
         }}
       >
         {Math.round(score)}
+      </div>
+      <div>
+        <div style={{ fontSize: 12, color: '#6B7280' }}>out of 100</div>
+        <div
+          style={{
+            width: 80,
+            height: 4,
+            borderRadius: 4,
+            background: '#F3F4F6',
+            marginTop: 4,
+          }}
+        >
+          <div
+            style={{
+              width: `${score}%`,
+              height: '100%',
+              borderRadius: 4,
+              background: color,
+            }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -102,6 +150,7 @@ export default function JobDetailPage() {
   const router = useRouter();
   const { workspaceId } = useWorkspaceContext();
   const [page, setPage] = useState(1);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const pageSize = 20;
 
   const { data: job, isLoading: jobLoading } = useJob(workspaceId, jobId);
@@ -117,8 +166,8 @@ export default function JobDetailPage() {
       title: 'Score',
       dataIndex: 'score',
       key: 'score',
-      width: 70,
-      sorter: (a: Lead, b: Lead) => (a.score ?? 0) - (b.score ?? 0),
+      width: 68,
+      sorter: (a: Lead, b: Lead) => (a.score ?? -1) - (b.score ?? -1),
       defaultSortOrder: 'descend' as const,
       render: (score: number | null) => <ScoreBadge score={score} />,
     },
@@ -131,22 +180,40 @@ export default function JobDetailPage() {
       ),
     },
     {
-      title: 'Contact',
-      key: 'contact',
-      render: (_: unknown, record: Lead) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {record.email && (
-            <a href={`mailto:${record.email}`} style={{ fontSize: 13, color: 'var(--brand)' }}>
-              <MailOutlined style={{ marginRight: 4 }} />{record.email}
-            </a>
-          )}
-          {record.phone && (
-            <span style={{ fontSize: 13, color: '#6B7280' }}>
-              <PhoneOutlined style={{ marginRight: 4 }} />{record.phone}
-            </span>
-          )}
-        </div>
-      ),
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      width: 220,
+      render: (email: string | null) =>
+        email ? (
+          <a
+            href={`mailto:${email}`}
+            style={{ fontSize: 13, color: 'var(--brand)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MailOutlined style={{ marginRight: 4 }} />{email}
+          </a>
+        ) : (
+          <span style={{ color: '#D1D5DB' }}>—</span>
+        ),
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 160,
+      render: (phone: string | null) =>
+        phone ? (
+          <a
+            href={`tel:${phone}`}
+            style={{ fontSize: 13, color: '#374151' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <PhoneOutlined style={{ marginRight: 4, color: '#6B7280' }} />{phone}
+          </a>
+        ) : (
+          <span style={{ color: '#D1D5DB' }}>—</span>
+        ),
     },
     {
       title: 'Website',
@@ -163,47 +230,46 @@ export default function JobDetailPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <GlobalOutlined />
-            {url.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+            {url.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 28)}
           </a>
         ) : (
-          <span style={{ color: '#9CA3AF' }}>—</span>
-        ),
-    },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      ellipsis: true,
-      render: (addr: string | null) =>
-        addr ? (
-          <span style={{ fontSize: 13, color: '#6B7280' }}>
-            <EnvironmentOutlined style={{ marginRight: 4 }} />{addr}
-          </span>
-        ) : (
-          <span style={{ color: '#9CA3AF' }}>—</span>
+          <span style={{ color: '#D1D5DB' }}>—</span>
         ),
     },
     {
       title: 'Why',
       dataIndex: 'reason',
       key: 'reason',
-      ellipsis: true,
       render: (reason: string | null) =>
         reason ? (
           <Tooltip title={reason}>
             <span style={{ fontSize: 13, color: '#6B7280', cursor: 'help' }}>
-              {reason.length > 60 ? `${reason.slice(0, 60)}…` : reason}
+              {reason.length > 70 ? `${reason.slice(0, 70)}…` : reason}
             </span>
           </Tooltip>
         ) : (
-          <span style={{ color: '#9CA3AF' }}>—</span>
+          <span style={{ color: '#D1D5DB' }}>—</span>
         ),
+    },
+    {
+      title: '',
+      key: 'action',
+      width: 40,
+      render: (_: unknown, record: Lead) => (
+        <Button
+          type="text"
+          size="small"
+          icon={<InfoCircleOutlined />}
+          style={{ color: '#9CA3AF' }}
+          onClick={(e) => { e.stopPropagation(); setSelectedLead(record); }}
+        />
+      ),
     },
   ];
 
   if (jobLoading) {
     return (
-      <div style={{ maxWidth: 1100 }}>
+      <div style={{ maxWidth: 1200 }}>
         <Skeleton active paragraph={{ rows: 4 }} style={{ marginBottom: 24 }} />
         <Skeleton active paragraph={{ rows: 6 }} />
       </div>
@@ -220,7 +286,7 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100 }}>
+    <div style={{ maxWidth: 1200 }}>
       {/* Back + breadcrumb */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
         <Button
@@ -252,6 +318,7 @@ export default function JobDetailPage() {
         style={{
           borderRadius: 12,
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          border: '1px solid var(--border)',
           marginBottom: 20,
         }}
       >
@@ -294,7 +361,6 @@ export default function JobDetailPage() {
               <Descriptions.Item label="Leads found">
                 <span style={{ fontWeight: 700, color: 'var(--brand)', fontSize: 16 }}>
                   {job._count?.leads ?? 0}
-                  {job.maxLeads ? ` / ${job.maxLeads}` : ''}
                 </span>
               </Descriptions.Item>
               {job.maxLeads && (
@@ -321,7 +387,7 @@ export default function JobDetailPage() {
       {/* Leads table */}
       <Card
         variant="borderless"
-        style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        style={{ borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid var(--border)' }}
         title={
           <span style={{ fontWeight: 700, fontSize: 16 }}>
             Leads{leadsData ? ` (${leadsData.totalCount})` : ''}
@@ -345,7 +411,6 @@ export default function JobDetailPage() {
             columns={columns}
             rowKey="id"
             size="middle"
-            scroll={{ x: 800 }}
             pagination={{
               current: page,
               pageSize,
@@ -354,9 +419,139 @@ export default function JobDetailPage() {
               showSizeChanger: false,
               showTotal: (total) => `${total} leads`,
             }}
+            onRow={(record) => ({
+              style: { cursor: 'pointer' },
+              onClick: () => setSelectedLead(record),
+            })}
           />
         )}
       </Card>
+
+      {/* Lead detail drawer */}
+      <Drawer
+        open={!!selectedLead}
+        onClose={() => setSelectedLead(null)}
+        width={480}
+        title={
+          selectedLead ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ScoreBadge score={selectedLead.score} />
+              <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>
+                {selectedLead.name}
+              </span>
+            </div>
+          ) : null
+        }
+        styles={{ body: { padding: '16px 24px' } }}
+      >
+        {selectedLead && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* Score */}
+            <div style={{ marginBottom: 20 }}>
+              <ScoreBar score={selectedLead.score} />
+            </div>
+
+            <Divider style={{ margin: '0 0 16px' }} />
+
+            {/* Contact info */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              {selectedLead.email && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MailOutlined style={{ color: '#6B7280', fontSize: 14, flexShrink: 0 }} />
+                  <a href={`mailto:${selectedLead.email}`} style={{ fontSize: 14, color: 'var(--brand)' }}>
+                    {selectedLead.email}
+                  </a>
+                </div>
+              )}
+              {selectedLead.phone && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PhoneOutlined style={{ color: '#6B7280', fontSize: 14, flexShrink: 0 }} />
+                  <a href={`tel:${selectedLead.phone}`} style={{ fontSize: 14, color: '#374151' }}>
+                    {selectedLead.phone}
+                  </a>
+                </div>
+              )}
+              {selectedLead.website && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <GlobalOutlined style={{ color: '#6B7280', fontSize: 14, flexShrink: 0 }} />
+                  <a
+                    href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: 14, color: 'var(--brand)', wordBreak: 'break-all' }}
+                  >
+                    {selectedLead.website}
+                  </a>
+                </div>
+              )}
+              {selectedLead.address && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <EnvironmentOutlined style={{ color: '#6B7280', fontSize: 14, flexShrink: 0, marginTop: 2 }} />
+                  <span style={{ fontSize: 14, color: '#374151' }}>{selectedLead.address}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Why scored */}
+            {selectedLead.reason && (
+              <>
+                <Divider style={{ margin: '0 0 16px' }} />
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Why this score
+                  </div>
+                  <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, margin: 0 }}>
+                    {selectedLead.reason}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Website intelligence */}
+            {selectedLead.websiteInfo && (
+              <>
+                <Divider style={{ margin: '0 0 16px' }} />
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+                    Website intelligence
+                  </div>
+                  <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6, margin: 0 }}>
+                    {selectedLead.websiteInfo}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Analysis fields */}
+            {selectedLead.analysisJson && Object.keys(selectedLead.analysisJson).length > 0 && (
+              <>
+                <Divider style={{ margin: '0 0 16px' }} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                    AI analysis
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {Object.entries(selectedLead.analysisJson as Record<string, unknown>).map(([key, val]) => (
+                      <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'capitalize' }}>
+                          {key.replace(/_/g, ' ')}
+                        </span>
+                        <span style={{ fontSize: 13, color: '#374151' }}>
+                          {typeof val === 'boolean'
+                            ? val ? 'Yes' : 'No'
+                            : typeof val === 'object'
+                              ? JSON.stringify(val)
+                              : String(val ?? '—')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Drawer>
     </div>
   );
 }

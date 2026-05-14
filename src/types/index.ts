@@ -54,6 +54,7 @@ export interface Lead {
   address: string | null;
   score: number | null;
   reason: string | null;
+  websiteInfo: string | null;
   analysisJson: object | null;
   createdAt: string;
   job?: Job;
