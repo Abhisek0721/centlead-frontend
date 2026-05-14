@@ -363,7 +363,7 @@ export default function JobDetailPage() {
                   {job._count?.leads ?? 0}
                 </span>
               </Descriptions.Item>
-              {job.maxLeads && (
+              {job.maxLeads && job.status !== 'completed' && (
                 <Descriptions.Item label="Progress">
                   <Progress
                     percent={Math.min(
