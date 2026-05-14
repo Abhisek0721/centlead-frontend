@@ -522,19 +522,54 @@ export default function JobDetailPage() {
               </>
             )}
 
-            {/* Analysis fields */}
+            {/* Key signals from analysis */}
             {selectedLead.analysisJson && (() => {
-              // analysisJson can be a flat object {key: val} or an array [{name, value, ...}]
               const raw = selectedLead.analysisJson as unknown;
-              const entries: { label: string; value: unknown }[] = Array.isArray(raw)
-                ? (raw as { name?: string; value?: unknown }[]).map((f) => ({
-                    label: String(f.name ?? ''),
-                    value: f.value,
-                  })).filter((f) => f.label)
-                : Object.entries(raw as Record<string, unknown>).map(([k, v]) => ({
-                    label: k,
-                    value: v,
-                  }));
+
+              const flatten = (data: unknown): { label: string; value: unknown }[] => {
+                if (Array.isArray(data)) {
+                  return (data as Record<string, unknown>[]).flatMap((item) => {
+                    const name = item.name ?? item.label ?? item.key;
+                    if (name !== undefined) return [{ label: String(name), value: item.value ?? item.val ?? item.data }];
+                    return Object.entries(item).map(([k, v]) => ({ label: k, value: v }));
+                  });
+                }
+                if (typeof data === 'object' && data !== null) {
+                  return Object.entries(data as Record<string, unknown>).flatMap(([k, v]) => {
+                    if (Array.isArray(v)) return flatten(v).map((e) => ({ ...e, label: e.label || k }));
+                    return [{ label: k, value: v }];
+                  });
+                }
+                return [];
+              };
+
+              const isBlank = (val: unknown) =>
+                val === null || val === undefined || val === '' ||
+                (typeof val === 'string' && ['n/a', 'none', 'unknown', 'no', 'false', '-', '—'].includes(val.toLowerCase())) ||
+                (Array.isArray(val) && val.length === 0);
+
+              const renderVal = (val: unknown): { text: string; positive: boolean } => {
+                if (typeof val === 'boolean') return { text: val ? 'Yes' : 'No', positive: val };
+                if (Array.isArray(val)) {
+                  const text = (val as unknown[]).map((v) =>
+                    typeof v === 'object' && v !== null
+                      ? Object.values(v as Record<string, unknown>).filter(Boolean).join(' ')
+                      : String(v)
+                  ).filter(Boolean).join(', ');
+                  return { text: text || '—', positive: false };
+                }
+                if (typeof val === 'object' && val !== null) {
+                  const text = Object.values(val as Record<string, unknown>).filter(Boolean).join(', ');
+                  return { text, positive: false };
+                }
+                const s = String(val ?? '');
+                const positive = ['yes', 'true', 'high', 'strong', 'good', 'available'].includes(s.toLowerCase());
+                return { text: s, positive };
+              };
+
+              const entries = flatten(raw)
+                .filter((e) => e.label && !isBlank(e.value))
+                .map((e) => ({ ...e, rendered: renderVal(e.value) }));
 
               if (entries.length === 0) return null;
 
@@ -543,22 +578,21 @@ export default function JobDetailPage() {
                   <Divider style={{ margin: '0 0 16px' }} />
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                      AI analysis
+                      Key signals
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {entries.map(({ label, value: val }) => (
-                        <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textTransform: 'capitalize' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {entries.map(({ label, rendered }, i) => (
+                        <div key={`${label}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                          <span style={{ fontSize: 13, color: '#6B7280', textTransform: 'capitalize', flexShrink: 0 }}>
                             {label.replace(/_/g, ' ')}
                           </span>
-                          <span style={{ fontSize: 13, color: '#374151' }}>
-                            {typeof val === 'boolean'
-                              ? val ? 'Yes' : 'No'
-                              : Array.isArray(val)
-                                ? (val as unknown[]).join(', ')
-                                : typeof val === 'object' && val !== null
-                                  ? JSON.stringify(val)
-                                  : String(val ?? '—')}
+                          <span style={{
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: rendered.positive ? '#059669' : '#111827',
+                            textAlign: 'right',
+                          }}>
+                            {rendered.text}
                           </span>
                         </div>
                       ))}
