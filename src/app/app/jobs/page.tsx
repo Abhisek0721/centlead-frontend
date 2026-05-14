@@ -36,6 +36,7 @@ import type { Job, JobStatus } from '@appTypes/index';
 const STATUS_CONFIG: Record<JobStatus, { color: string; icon: React.ReactNode; label: string }> = {
   pending: { color: '#6B7280', icon: <ClockCircleOutlined />, label: 'Pending' },
   running: { color: '#3B82F6', icon: <SyncOutlined spin />, label: 'Running' },
+  scoring: { color: '#8B5CF6', icon: <ThunderboltFilled />, label: 'Scoring' },
   completed: { color: '#10B981', icon: <CheckCircleOutlined />, label: 'Done' },
   failed: { color: '#EF4444', icon: <ExclamationCircleOutlined />, label: 'Failed' },
 };
@@ -222,7 +223,7 @@ export default function JobsPage() {
   const [showModal, setShowModal] = useState(false);
   const [form] = Form.useForm();
 
-  async function handleCreate(values: { searchQuery: string; goalPrompt: string; aiEnabled: boolean }) {
+  async function handleCreate(values: { searchQuery: string; country: string; location?: string; goalPrompt: string; aiEnabled: boolean }) {
     try {
       await createJob.mutateAsync({ ...values, aiEnabled: isTrial ? true : values.aiEnabled });
       toast.success('Job created and queued!');
@@ -260,6 +261,11 @@ export default function JobsPage() {
         <div>
           <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
             {text}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span style={{ fontSize: 12, color: 'var(--brand)', fontWeight: 500 }}>
+              {[record.location, record.country].filter(Boolean).join(', ')}
+            </span>
           </div>
           <div
             style={{
@@ -490,15 +496,33 @@ export default function JobsPage() {
             name="searchQuery"
             label="Search Query"
             rules={[{ required: true, message: 'Enter a search query' }]}
-            extra="What to search for (e.g. 'Italian restaurants in Chicago')"
+            extra="What kind of business to find (e.g. 'Gym trainers', 'Italian restaurants')"
           >
             <Input.TextArea
               rows={2}
-              placeholder="e.g. Law firms in New York City"
+              placeholder="e.g. Personal trainers and nutritionists"
               maxLength={500}
               showCount
             />
           </Form.Item>
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Form.Item
+              name="country"
+              label="Country"
+              rules={[{ required: true, message: 'Enter a country' }]}
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="e.g. Germany" />
+            </Form.Item>
+            <Form.Item
+              name="location"
+              label="City / Region"
+              style={{ flex: 1 }}
+            >
+              <Input placeholder="e.g. Berlin (optional)" />
+            </Form.Item>
+          </div>
 
           <Form.Item
             name="goalPrompt"

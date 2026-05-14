@@ -35,6 +35,7 @@ import type { JobStatus, Lead } from '@appTypes/index';
 const STATUS_CONFIG: Record<JobStatus, { color: string; icon: React.ReactNode; label: string }> = {
   pending: { color: '#6B7280', icon: <ClockCircleOutlined />, label: 'Pending' },
   running: { color: '#3B82F6', icon: <SyncOutlined spin />, label: 'Running' },
+  scoring: { color: '#8B5CF6', icon: <ThunderboltFilled />, label: 'Scoring' },
   completed: { color: '#10B981', icon: <CheckCircleOutlined />, label: 'Completed' },
   failed: { color: '#EF4444', icon: <ExclamationCircleOutlined />, label: 'Failed' },
 };

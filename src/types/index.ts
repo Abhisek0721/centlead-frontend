@@ -1,6 +1,6 @@
 export type Plan = 'free' | 'trial' | 'starter' | 'growth' | 'pro' | 'agency';
 export type Role = 'owner' | 'admin' | 'member' | 'viewer';
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type JobStatus = 'pending' | 'running' | 'scoring' | 'completed' | 'failed';
 export type InvitationStatus = 'pending' | 'accepted' | 'expired';
 export type SubscriptionStatus = 'active' | 'canceled' | 'past_due';
 
@@ -32,6 +32,8 @@ export interface Job {
   workspaceId: string;
   createdById: string;
   searchQuery: string;
+  country: string;
+  location?: string | null;
   goalPrompt: string;
   aiEnabled: boolean;
   analysisSchema: object | null;
